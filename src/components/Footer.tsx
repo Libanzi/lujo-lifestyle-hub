@@ -1,0 +1,73 @@
+import { Facebook, Instagram, Twitter } from "lucide-react";
+
+export const Footer = () => {
+  return (
+    <footer className="bg-primary text-primary-foreground">
+      <div className="container px-4 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+          <div>
+            <h3 className="text-2xl font-bold bg-gradient-to-r from-[hsl(var(--luxury-gold))] to-[hsl(var(--luxury-champagne))] bg-clip-text text-transparent mb-4">
+              LUJO
+            </h3>
+            <p className="text-primary-foreground/70 text-sm">
+              Luxury Made Simple. Premium products at accessible prices for everyday living.
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-4">Shop</h4>
+            <ul className="space-y-2 text-sm text-primary-foreground/70">
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">New Arrivals</a></li>
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Fashion & Apparel</a></li>
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Home & Lifestyle</a></li>
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Electronics</a></li>
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Beauty & Care</a></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-4">Customer Care</h4>
+            <ul className="space-y-2 text-sm text-primary-foreground/70">
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Contact Us</a></li>
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Track Order</a></li>
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Shipping & Returns</a></li>
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">FAQ</a></li>
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Size Guide</a></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold mb-4">About</h4>
+            <ul className="space-y-2 text-sm text-primary-foreground/70">
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Our Story</a></li>
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Blog</a></li>
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Careers</a></li>
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Privacy Policy</a></li>
+              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Terms & Conditions</a></li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="border-t border-primary-foreground/10 pt-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-sm text-primary-foreground/60">
+              © 2025 Lujo.com. All rights reserved.
+            </p>
+            
+            <div className="flex items-center gap-4">
+              <a href="#" className="text-primary-foreground/60 hover:text-[hsl(var(--luxury-gold))] transition-colors">
+                <Facebook className="h-5 w-5" />
+              </a>
+              <a href="#" className="text-primary-foreground/60 hover:text-[hsl(var(--luxury-gold))] transition-colors">
+                <Instagram className="h-5 w-5" />
+              </a>
+              <a href="#" className="text-primary-foreground/60 hover:text-[hsl(var(--luxury-gold))] transition-colors">
+                <Twitter className="h-5 w-5" />
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+};
