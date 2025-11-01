@@ -254,7 +254,11 @@ export default function Cart() {
                         </span>
                       </div>
                     </div>
-                    <Button className="w-full mb-2" size="lg">
+                    <Button 
+                      className="w-full mb-2" 
+                      size="lg"
+                      onClick={() => navigate("/checkout")}
+                    >
                       Proceed to Checkout
                     </Button>
                     <Button

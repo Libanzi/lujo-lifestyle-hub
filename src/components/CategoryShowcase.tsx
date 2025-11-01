@@ -1,29 +1,33 @@
 import { Card } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-const categories = [
-  {
-    name: "Fashion & Apparel",
-    image: "https://images.unsplash.com/photo-1445205170230-053b83016050",
-    items: "2,500+ Products"
-  },
-  {
-    name: "Home & Lifestyle",
-    image: "https://images.unsplash.com/photo-1484101403633-562f891dc89a",
-    items: "1,800+ Products"
-  },
-  {
-    name: "Electronics",
-    image: "https://images.unsplash.com/photo-1498049794561-7780e7231661",
-    items: "950+ Products"
-  },
-  {
-    name: "Beauty & Care",
-    image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348",
-    items: "1,200+ Products"
-  }
-];
+interface Category {
+  id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  slug: string;
+}
 
 export const CategoryShowcase = () => {
+  const navigate = useNavigate();
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    const { data } = await supabase
+      .from("categories")
+      .select("*")
+      .limit(4);
+    
+    if (data) setCategories(data);
+  };
+
   return (
     <section className="py-20 px-4">
       <div className="container">
@@ -33,14 +37,15 @@ export const CategoryShowcase = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {categories.map((category, index) => (
+          {categories.map((category) => (
             <Card 
-              key={index}
+              key={category.id}
               className="group relative overflow-hidden cursor-pointer border-0 shadow-[var(--shadow-luxury)] hover:shadow-[var(--shadow-gold-glow)] transition-all duration-500"
+              onClick={() => navigate(`/category/${category.slug}`)}
             >
               <div className="aspect-[3/4] relative overflow-hidden">
                 <img 
-                  src={category.image} 
+                  src={category.image_url || "https://images.unsplash.com/photo-1441986300917-64674bd600d8"} 
                   alt={category.name}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
@@ -48,7 +53,9 @@ export const CategoryShowcase = () => {
                 
                 <div className="absolute bottom-0 left-0 right-0 p-6 text-primary-foreground">
                   <h3 className="text-2xl font-bold mb-2">{category.name}</h3>
-                  <p className="text-sm text-primary-foreground/80">{category.items}</p>
+                  {category.description && (
+                    <p className="text-sm text-primary-foreground/80">{category.description}</p>
+                  )}
                 </div>
               </div>
             </Card>

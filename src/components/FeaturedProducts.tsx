@@ -13,6 +13,7 @@ interface Product {
   original_price: number | null;
   image_url: string;
   badge: string | null;
+  slug: string;
 }
 
 export const FeaturedProducts = () => {
@@ -86,7 +87,10 @@ export const FeaturedProducts = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {products.map((product) => (
             <Card key={product.id} className="group overflow-hidden border-0 shadow-lg hover:shadow-[var(--shadow-gold-glow)] transition-all duration-300">
-              <div className="relative aspect-square overflow-hidden">
+              <div 
+                className="relative aspect-square overflow-hidden cursor-pointer"
+                onClick={() => navigate(`/product/${product.slug}`)}
+              >
                 <img 
                   src={product.image_url} 
                   alt={product.name}
@@ -109,7 +113,12 @@ export const FeaturedProducts = () => {
               </div>
               
               <CardContent className="p-4">
-                <h3 className="font-semibold mb-2 line-clamp-1">{product.name}</h3>
+                <h3 
+                  className="font-semibold mb-2 line-clamp-1 cursor-pointer hover:text-[hsl(var(--luxury-gold))]"
+                  onClick={() => navigate(`/product/${product.slug}`)}
+                >
+                  {product.name}
+                </h3>
                 <div className="flex items-baseline gap-2 mb-4">
                   <span className="text-xl font-bold text-[hsl(var(--luxury-gold))]">R{product.price.toFixed(2)}</span>
                   {product.original_price && (
