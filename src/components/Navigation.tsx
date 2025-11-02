@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Search, ShoppingCart, User, Heart, Menu, LogOut, Package, X } from "lucide-react";
+import { Search, ShoppingCart, User, Heart, Menu, LogOut, Package, X, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
@@ -89,11 +89,14 @@ export const Navigation = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/wishlist")} className="hidden md:flex">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/chat")} className="hidden md:flex" title="Chat with us">
+            <MessageCircle className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/wishlist")} className="hidden md:flex" title="Wishlist">
             <Heart className="h-5 w-5" />
           </Button>
           {user && (
-            <Button variant="ghost" size="icon" onClick={() => navigate("/orders")} className="hidden md:flex">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/orders")} className="hidden md:flex" title="Orders">
               <Package className="h-5 w-5" />
             </Button>
           )}
@@ -102,11 +105,11 @@ export const Navigation = () => {
               <LogOut className="h-5 w-5" />
             </Button>
           ) : (
-            <Button variant="ghost" size="icon" onClick={() => navigate("/auth")} className="hidden md:flex">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/auth")} className="hidden md:flex" title="Sign In">
               <User className="h-5 w-5" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="relative" onClick={() => navigate("/cart")}>
+          <Button variant="ghost" size="icon" className="relative" onClick={() => navigate("/cart")} title="Cart">
             <ShoppingCart className="h-5 w-5" />
             {cartCount > 0 && (
               <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[hsl(var(--luxury-gold))] text-[10px] font-bold text-primary flex items-center justify-center">
@@ -131,6 +134,10 @@ export const Navigation = () => {
                 <Search className="h-4 w-4" />
               </Button>
             </form>
+            <Button variant="ghost" className="w-full justify-start" onClick={() => { navigate("/chat"); setIsOpen(false); }}>
+              <MessageCircle className="h-5 w-5 mr-2" />
+              Chat
+            </Button>
             {user ? (
               <>
                 <Button variant="ghost" className="w-full justify-start" onClick={() => { navigate("/wishlist"); setIsOpen(false); }}>
