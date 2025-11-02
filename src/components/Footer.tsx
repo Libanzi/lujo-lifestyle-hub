@@ -17,33 +17,33 @@ export const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Shop</h4>
             <ul className="space-y-2 text-sm text-primary-foreground/70">
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">New Arrivals</a></li>
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Fashion & Apparel</a></li>
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Home & Lifestyle</a></li>
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Electronics</a></li>
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Beauty & Care</a></li>
+              <li><a href="/new-arrivals" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">New Arrivals</a></li>
+              <li><a href="/category/fashion-apparel" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Fashion & Apparel</a></li>
+              <li><a href="/category/home-lifestyle" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Home & Lifestyle</a></li>
+              <li><a href="/category/electronics" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Electronics</a></li>
+              <li><a href="/category/beauty-care" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Beauty & Care</a></li>
             </ul>
           </div>
           
           <div>
             <h4 className="font-semibold mb-4">Customer Care</h4>
             <ul className="space-y-2 text-sm text-primary-foreground/70">
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Contact Us</a></li>
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Track Order</a></li>
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Shipping & Returns</a></li>
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">FAQ</a></li>
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Size Guide</a></li>
+              <li><a href="/contact" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Contact Us</a></li>
+              <li><a href="/track-order" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Track Order</a></li>
+              <li><a href="/shipping" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Shipping & Returns</a></li>
+              <li><a href="/faq" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">FAQ</a></li>
+              <li><a href="/size-guide" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Size Guide</a></li>
             </ul>
           </div>
           
           <div>
             <h4 className="font-semibold mb-4">About</h4>
             <ul className="space-y-2 text-sm text-primary-foreground/70">
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Our Story</a></li>
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Blog</a></li>
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Careers</a></li>
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Terms & Conditions</a></li>
+              <li><a href="/about" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Our Story</a></li>
+              <li><a href="/blog" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Blog</a></li>
+              <li><a href="/careers" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Careers</a></li>
+              <li><a href="/privacy" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Privacy Policy</a></li>
+              <li><a href="/terms" className="hover:text-[hsl(var(--luxury-gold))] transition-colors">Terms & Conditions</a></li>
             </ul>
           </div>
         </div>

@@ -138,7 +138,12 @@ export const FeaturedProducts = () => {
         </div>
         
         <div className="text-center mt-12">
-          <Button size="lg" variant="outline" className="border-2">
+          <Button 
+            size="lg" 
+            variant="outline" 
+            className="border-2"
+            onClick={() => navigate("/products")}
+          >
             View All Products
           </Button>
         </div>

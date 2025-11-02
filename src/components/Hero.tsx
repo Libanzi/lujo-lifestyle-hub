@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const Hero = () => {
+  const navigate = useNavigate();
+  
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary via-[hsl(var(--luxury-charcoal))] to-primary">
       <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1441986300917-64674bd600d8')] bg-cover bg-center opacity-10" />
@@ -20,6 +23,7 @@ export const Hero = () => {
             <Button 
               size="lg" 
               className="bg-[hsl(var(--luxury-gold))] hover:bg-[hsl(var(--luxury-champagne))] text-primary group"
+              onClick={() => navigate("/products")}
             >
               Shop Now
               <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -27,7 +31,8 @@ export const Hero = () => {
             <Button 
               size="lg" 
               variant="outline" 
-              className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10"
+              className="border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20"
+              onClick={() => navigate("/products")}
             >
               Explore Collections
             </Button>
