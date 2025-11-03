@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Search, ShoppingCart, User, Heart, Menu, LogOut, Package, X, MessageCircle } from "lucide-react";
+import { Search, ShoppingCart, User, Heart, Menu, LogOut, Package, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
@@ -224,17 +224,6 @@ export const Navigation = () => {
                     <User className="h-5 w-5" />
                   </Button>
                 )}
-
-                {/* Chat */}
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => navigate("/chat")} 
-                  className="hidden md:flex" 
-                  title="Chat"
-                >
-                  <MessageCircle className="h-5 w-5" />
-                </Button>
               </div>
             </div>
           </div>
@@ -282,18 +271,6 @@ export const Navigation = () => {
               >
                 <Heart className="h-5 w-5 mr-2" />
                 Wishlist
-              </Button>
-
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start" 
-                onClick={() => { 
-                  navigate("/chat"); 
-                  setIsMobileMenuOpen(false); 
-                }}
-              >
-                <MessageCircle className="h-5 w-5 mr-2" />
-                Chat
               </Button>
 
               {user ? (
