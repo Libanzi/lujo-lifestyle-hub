@@ -89,7 +89,7 @@ export const Navigation = () => {
       <header className={`sticky top-0 z-50 w-full bg-background transition-all duration-300 ${isScrolled ? 'shadow-lg' : ''}`}>
         {/* Top Promotional Bar */}
         <div className="bg-primary text-primary-foreground py-2 text-center text-sm">
-          <p>Free delivery for orders over R800 | Buy Now, Pay Later with Payflex</p>
+          <p>Free delivery for orders over R800 | Buy now, pay later</p>
         </div>
 
         {/* Main Header */}

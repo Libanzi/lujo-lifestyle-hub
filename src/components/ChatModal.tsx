@@ -153,7 +153,10 @@ export const ChatModal = ({ isOpen, onClose }: ChatModalProps) => {
       <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
         <DialogHeader className="p-6 pb-4 border-b">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-semibold">Shopping Assistant</DialogTitle>
+            <div className="flex flex-col gap-1">
+              <DialogTitle className="text-xl font-semibold">Shopping Assistant</DialogTitle>
+              <p className="text-xs text-muted-foreground">Powered by multijobscafe</p>
+            </div>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-5 w-5" />
             </Button>
