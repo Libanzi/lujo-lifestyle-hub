@@ -11,7 +11,6 @@ import { AuthModal } from "./AuthModal";
 export const Navigation = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,7 +25,6 @@ export const Navigation = () => {
       setUser(session?.user || null);
       if (session?.user) {
         loadCartCount();
-        checkAdminStatus(session.user.id);
       }
     });
 
@@ -35,10 +33,8 @@ export const Navigation = () => {
       setUser(session?.user || null);
       if (session?.user) {
         loadCartCount();
-        checkAdminStatus(session.user.id);
       } else {
         setCartCount(0);
-        setIsAdmin(false);
       }
     });
 
@@ -54,17 +50,6 @@ export const Navigation = () => {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
-
-  const checkAdminStatus = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
-    
-    setIsAdmin(!!data);
-  };
 
   const loadCartCount = async () => {
     const { count } = await supabase
@@ -211,17 +196,6 @@ export const Navigation = () => {
                 {/* Account */}
                 {user ? (
                   <div className="hidden md:flex items-center gap-2">
-                    {isAdmin && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => navigate("/admin")} 
-                        title="Admin Panel"
-                        className="text-[hsl(var(--luxury-gold))]"
-                      >
-                        <User className="h-5 w-5" />
-                      </Button>
-                    )}
                     <Button 
                       variant="ghost" 
                       size="icon" 
