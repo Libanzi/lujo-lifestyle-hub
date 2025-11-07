@@ -66,9 +66,14 @@ export const Footer = () => {
         
         <div className="border-t border-primary-foreground/10 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-primary-foreground/60">
-              © 2025 Lujo.com. All rights reserved.
-            </p>
+            <div className="text-center md:text-left">
+              <p className="text-sm text-primary-foreground/60">
+                © 2025 Lujo.com. All rights reserved.
+              </p>
+              <p className="text-xs text-primary-foreground/40 mt-1">
+                Powered by Multijobscafe
+              </p>
+            </div>
             
             <div className="flex items-center gap-4">
               <a href="#" className="text-primary-foreground/60 hover:text-[hsl(var(--luxury-gold))] transition-colors">
