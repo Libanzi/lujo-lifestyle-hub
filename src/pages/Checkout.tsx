@@ -30,7 +30,7 @@ export default function Checkout() {
   const [submitting, setSubmitting] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [shippingAddress, setShippingAddress] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("payfast");
+  const [paymentMethod, setPaymentMethod] = useState("cod");
   const [discountCode, setDiscountCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState<any>(null);
   const [checkingDiscount, setCheckingDiscount] = useState(false);
@@ -199,8 +199,38 @@ export default function Checkout() {
         }
       }
 
-      // Process payment
-      if (paymentMethod === 'payfast') {
+      // Process payment based on method
+      if (paymentMethod === 'cod') {
+        // Cash on Delivery - no payment gateway needed
+        await supabase
+          .from('orders')
+          .update({ 
+            payment_method: 'cod',
+            payment_status: 'pending'
+          })
+          .eq('id', order.id);
+
+        // Clear cart
+        await supabase
+          .from("cart_items")
+          .delete()
+          .in("id", cartItems.map(item => item.id));
+
+        // Send order confirmation email
+        await supabase.functions.invoke('send-order-email', {
+          body: {
+            orderId: order.id,
+            type: 'confirmation',
+          },
+        }).catch(console.error);
+
+        toast({
+          title: "Order placed successfully!",
+          description: "You will pay cash on delivery. We'll contact you soon.",
+        });
+
+        navigate("/orders?success=true");
+      } else if (paymentMethod === 'payfast') {
         const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
           'process-payfast-payment',
           {
@@ -251,22 +281,9 @@ export default function Checkout() {
           title: "PayPal integration coming soon",
           description: "This payment method will be available shortly",
         });
+        setSubmitting(false);
         return;
       }
-
-      // Clear cart
-      await supabase
-        .from("cart_items")
-        .delete()
-        .in("id", cartItems.map(item => item.id));
-
-      // Send confirmation email
-      await supabase.functions.invoke('send-order-email', {
-        body: {
-          orderId: order.id,
-          type: 'confirmation',
-        },
-      }).catch(console.error);
 
     } catch (error: any) {
       console.error('Checkout error:', error);
@@ -321,6 +338,13 @@ export default function Checkout() {
                       <Label>Payment Method</Label>
                       <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="mt-2">
                         <div className="flex items-center space-x-2 border rounded-lg p-4">
+                          <RadioGroupItem value="cod" id="cod" />
+                          <Label htmlFor="cod" className="flex-1 cursor-pointer">
+                            <div className="font-medium">Cash on Delivery</div>
+                            <div className="text-sm text-muted-foreground">Pay when you receive your order</div>
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2 border rounded-lg p-4">
                           <RadioGroupItem value="payfast" id="payfast" />
                           <Label htmlFor="payfast" className="flex-1 cursor-pointer">
                             <div className="font-medium">PayFast</div>
@@ -350,7 +374,7 @@ export default function Checkout() {
                       size="lg"
                       disabled={submitting}
                     >
-                      {submitting ? "Processing..." : "Continue to Payment"}
+                      {submitting ? "Processing..." : paymentMethod === 'cod' ? "Place Order" : "Continue to Payment"}
                     </Button>
                   </form>
                 </CardContent>
