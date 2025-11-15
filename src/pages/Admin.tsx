@@ -1,6 +1,7 @@
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { LowStockAlert } from "@/components/LowStockAlert";
+import { ReorderSuggestions } from "@/components/ReorderSuggestions";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,10 @@ const Admin = () => {
           <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
           
           <LowStockAlert />
+          
+          <div className="mb-8">
+            <ReorderSuggestions />
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/admin/products")}>
