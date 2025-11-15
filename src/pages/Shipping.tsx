@@ -17,7 +17,7 @@ const Shipping = () => {
                 <h2 className="text-2xl font-semibold">Shipping Information</h2>
               </div>
               <div className="prose prose-gray max-w-none">
-                <p>We offer free standard shipping on all orders over $50. Orders are typically processed within 1-2 business days.</p>
+                <p>We offer free standard shipping on all orders over R500. Orders are typically processed within 1-2 business days.</p>
                 <ul>
                   <li><strong>Standard Shipping:</strong> 5-7 business days</li>
                   <li><strong>Express Shipping:</strong> 2-3 business days</li>

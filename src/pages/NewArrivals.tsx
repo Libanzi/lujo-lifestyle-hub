@@ -57,10 +57,10 @@ const NewArrivals = () => {
                 <CardContent className="p-4">
                   <h3 className="font-semibold mb-2 line-clamp-2">{product.name}</h3>
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg font-bold">${product.price}</span>
+                    <span className="text-lg font-bold">R{product.price}</span>
                     {product.original_price && (
                       <span className="text-sm text-muted-foreground line-through">
-                        ${product.original_price}
+                        R{product.original_price}
                       </span>
                     )}
                   </div>
