@@ -121,6 +121,109 @@ export type Database = {
         }
         Relationships: []
       }
+      loyalty_points: {
+        Row: {
+          created_at: string | null
+          current_points: number
+          id: string
+          lifetime_points: number
+          tier_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_points?: number
+          id?: string
+          lifetime_points?: number
+          tier_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_points?: number
+          id?: string
+          lifetime_points?: number
+          tier_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_points_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_tiers: {
+        Row: {
+          benefits: string[] | null
+          created_at: string | null
+          discount_percentage: number
+          id: string
+          min_points: number
+          name: string
+        }
+        Insert: {
+          benefits?: string[] | null
+          created_at?: string | null
+          discount_percentage: number
+          id?: string
+          min_points: number
+          name: string
+        }
+        Update: {
+          benefits?: string[] | null
+          created_at?: string | null
+          discount_percentage?: number
+          id?: string
+          min_points?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      loyalty_transactions: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          order_id: string | null
+          points: number
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          points: number
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          points?: number
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -299,6 +402,38 @@ export type Database = {
           },
         ]
       }
+      product_specifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          product_id: string
+          spec_name: string
+          spec_value: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          product_id: string
+          spec_name: string
+          spec_value: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          product_id?: string
+          spec_name?: string
+          spec_value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_specifications_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           badge: string | null
@@ -381,6 +516,53 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      reorder_suggestions: {
+        Row: {
+          created_at: string | null
+          current_stock: number
+          days_until_stockout: number | null
+          id: string
+          priority: string
+          product_id: string
+          sales_velocity: number
+          status: string
+          suggested_reorder_quantity: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_stock: number
+          days_until_stockout?: number | null
+          id?: string
+          priority?: string
+          product_id: string
+          sales_velocity: number
+          status?: string
+          suggested_reorder_quantity: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_stock?: number
+          days_until_stockout?: number | null
+          id?: string
+          priority?: string
+          product_id?: string
+          sales_velocity?: number
+          status?: string
+          suggested_reorder_quantity?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reorder_suggestions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
