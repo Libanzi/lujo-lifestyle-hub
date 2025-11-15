@@ -224,6 +224,15 @@ export default function Checkout() {
           },
         }).catch(console.error);
 
+        // Process loyalty points
+        await supabase.functions.invoke('process-loyalty-points', {
+          body: {
+            userId: user.id,
+            orderId: order.id,
+            orderAmount: totalAmount,
+          },
+        }).catch(console.error);
+
         toast({
           title: "Order placed successfully!",
           description: "You will pay cash on delivery. We'll contact you soon.",

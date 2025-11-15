@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Search, ShoppingCart, User, Heart, Menu, LogOut, Package, X, Shield } from "lucide-react";
+import { Search, ShoppingCart, User, Heart, Menu, LogOut, Package, X, Shield, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
@@ -211,6 +211,14 @@ export const Navigation = () => {
                 {/* Account */}
                 {user ? (
                   <div className="hidden md:flex items-center gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => navigate("/loyalty")} 
+                      title="Loyalty Rewards"
+                    >
+                      <Award className="h-5 w-5" />
+                    </Button>
                     <Button 
                       variant="ghost" 
                       size="icon" 
