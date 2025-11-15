@@ -248,6 +248,8 @@ const AdminProducts = () => {
             </Button>
           </div>
 
+          <LowStockAlert />
+
           {showForm && (
             <Card className="mb-8">
               <CardHeader>

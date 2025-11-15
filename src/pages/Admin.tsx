@@ -1,9 +1,10 @@
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { LowStockAlert } from "@/components/LowStockAlert";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Package, Layers, ShoppingBag } from "lucide-react";
+import { Package, Layers, ShoppingBag, Percent, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Admin = () => {
@@ -47,10 +48,12 @@ const Admin = () => {
         <div className="container px-4">
           <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <LowStockAlert />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/admin/products")}>
               <CardHeader>
-                <Package className="h-12 w-12 text-[hsl(var(--luxury-gold))] mb-2" />
+                <Package className="h-12 w-12 text-primary mb-2" />
                 <CardTitle>Products</CardTitle>
               </CardHeader>
               <CardContent>
@@ -62,7 +65,7 @@ const Admin = () => {
 
             <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/admin/categories")}>
               <CardHeader>
-                <Layers className="h-12 w-12 text-[hsl(var(--luxury-gold))] mb-2" />
+                <Layers className="h-12 w-12 text-primary mb-2" />
                 <CardTitle>Categories</CardTitle>
               </CardHeader>
               <CardContent>
@@ -74,12 +77,36 @@ const Admin = () => {
 
             <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/admin/orders")}>
               <CardHeader>
-                <ShoppingBag className="h-12 w-12 text-[hsl(var(--luxury-gold))] mb-2" />
+                <ShoppingBag className="h-12 w-12 text-primary mb-2" />
                 <CardTitle>Orders</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
                   View and manage customer orders
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/admin/discounts")}>
+              <CardHeader>
+                <Percent className="h-12 w-12 text-primary mb-2" />
+                <CardTitle>Discount Codes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Create and manage promotional discount codes
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/analytics")}>
+              <CardHeader>
+                <BarChart3 className="h-12 w-12 text-primary mb-2" />
+                <CardTitle>Analytics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  View sales reports and business insights
                 </p>
               </CardContent>
             </Card>
