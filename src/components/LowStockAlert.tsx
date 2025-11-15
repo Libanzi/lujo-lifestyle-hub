@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 interface LowStockProduct {
   id: string;
@@ -13,7 +14,9 @@ interface LowStockProduct {
 
 export function LowStockAlert() {
   const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([]);
+  const [notifying, setNotifying] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     checkLowStock();
@@ -53,6 +56,29 @@ export function LowStockAlert() {
     }
   };
 
+  const sendNotifications = async () => {
+    setNotifying(true);
+    try {
+      const { error } = await supabase.functions.invoke('notify-low-stock');
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Notifications sent",
+        description: "All admins have been notified about low stock products.",
+      });
+    } catch (error: any) {
+      console.error("Error sending notifications:", error);
+      toast({
+        title: "Failed to send notifications",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setNotifying(false);
+    }
+  };
+
   if (lowStockProducts.length === 0) return null;
 
   return (
@@ -73,13 +99,24 @@ export function LowStockAlert() {
             <li>and {lowStockProducts.length - 3} more...</li>
           )}
         </ul>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => navigate("/admin/products")}
-        >
-          Manage Inventory
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => navigate("/admin/products")}
+          >
+            Manage Inventory
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={sendNotifications}
+            disabled={notifying}
+          >
+            <Mail className="h-4 w-4 mr-2" />
+            {notifying ? "Sending..." : "Notify Admins"}
+          </Button>
+        </div>
       </AlertDescription>
     </Alert>
   );
