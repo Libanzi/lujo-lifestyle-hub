@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ShoppingBag } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -27,8 +28,12 @@ export default function Checkout() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<any>(null);
   const [shippingAddress, setShippingAddress] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("payfast");
+  const [discountCode, setDiscountCode] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<any>(null);
+  const [checkingDiscount, setCheckingDiscount] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -79,8 +84,53 @@ export default function Checkout() {
     }
   };
 
-  const calculateTotal = () => {
+  const calculateSubtotal = () => {
     return cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  };
+
+  const calculateTotal = () => {
+    const subtotal = calculateSubtotal();
+    const discountAmount = appliedDiscount?.amount || 0;
+    return Math.max(0, subtotal - discountAmount);
+  };
+
+  const handleApplyDiscount = async () => {
+    if (!discountCode.trim()) return;
+
+    setCheckingDiscount(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-discount', {
+        body: {
+          code: discountCode,
+          subtotal: calculateSubtotal(),
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.valid) {
+        setAppliedDiscount(data.discount);
+        toast({
+          title: "Discount applied!",
+          description: `You saved R${data.discount.amount.toFixed(2)}`,
+        });
+      } else {
+        toast({
+          title: "Invalid discount code",
+          description: data.error,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error applying discount",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setCheckingDiscount(false);
+    }
   };
 
   const handleCheckout = async (e: React.FormEvent) => {
@@ -100,7 +150,9 @@ export default function Checkout() {
     try {
       const orderNumber = `ORD-${Date.now()}`;
       const totalAmount = calculateTotal();
+      const discountAmount = appliedDiscount?.amount || 0;
 
+      // Create order
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -109,12 +161,15 @@ export default function Checkout() {
           total_amount: totalAmount,
           shipping_address: shippingAddress,
           status: "pending",
+          discount_code: appliedDiscount?.code || null,
+          discount_amount: discountAmount,
         })
         .select()
         .single();
 
       if (orderError) throw orderError;
 
+      // Create order items
       const orderItems = cartItems.map(item => ({
         order_id: order.id,
         product_id: item.product.id,
@@ -128,22 +183,95 @@ export default function Checkout() {
 
       if (itemsError) throw itemsError;
 
-      const { error: clearCartError } = await supabase
+      // Increment discount uses if applied
+      if (appliedDiscount?.code) {
+        const { data: discountData } = await supabase
+          .from('discount_codes')
+          .select('uses_count')
+          .eq('code', appliedDiscount.code)
+          .single();
+        
+        if (discountData) {
+          await supabase
+            .from('discount_codes')
+            .update({ uses_count: discountData.uses_count + 1 })
+            .eq('code', appliedDiscount.code);
+        }
+      }
+
+      // Process payment
+      if (paymentMethod === 'payfast') {
+        const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
+          'process-payfast-payment',
+          {
+            body: {
+              orderId: order.id,
+              amount: totalAmount,
+              returnUrl: `${window.location.origin}/orders?success=true`,
+              cancelUrl: `${window.location.origin}/checkout?cancelled=true`,
+              notifyUrl: `${window.location.origin}/api/payfast-webhook`,
+            },
+          }
+        );
+
+        if (paymentError) throw paymentError;
+
+        // Redirect to PayFast
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = paymentData.paymentUrl;
+        Object.entries(paymentData.paymentData).forEach(([key, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = value as string;
+          form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+      } else if (paymentMethod === 'stripe') {
+        const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
+          'process-stripe-payment',
+          {
+            body: {
+              orderId: order.id,
+              successUrl: `${window.location.origin}/orders?success=true`,
+              cancelUrl: `${window.location.origin}/checkout?cancelled=true`,
+            },
+          }
+        );
+
+        if (paymentError) throw paymentError;
+
+        // Redirect to Stripe Checkout
+        window.location.href = paymentData.sessionUrl;
+      } else if (paymentMethod === 'paypal') {
+        // PayPal integration placeholder
+        toast({
+          title: "PayPal integration coming soon",
+          description: "This payment method will be available shortly",
+        });
+        return;
+      }
+
+      // Clear cart
+      await supabase
         .from("cart_items")
         .delete()
         .in("id", cartItems.map(item => item.id));
 
-      if (clearCartError) throw clearCartError;
+      // Send confirmation email
+      await supabase.functions.invoke('send-order-email', {
+        body: {
+          orderId: order.id,
+          type: 'confirmation',
+        },
+      }).catch(console.error);
 
-      toast({
-        title: "Order placed successfully!",
-        description: `Your order number is ${orderNumber}`,
-      });
-
-      navigate("/orders");
     } catch (error: any) {
+      console.error('Checkout error:', error);
       toast({
-        title: "Error placing order",
+        title: "Error processing payment",
         description: error.message,
         variant: "destructive",
       });
@@ -175,8 +303,8 @@ export default function Checkout() {
             <div>
               <Card>
                 <CardContent className="p-6">
-                  <h2 className="text-xl font-bold mb-6">Shipping Information</h2>
-                  <form onSubmit={handleCheckout} className="space-y-4">
+                  <h2 className="text-xl font-bold mb-6">Shipping & Payment</h2>
+                  <form onSubmit={handleCheckout} className="space-y-6">
                     <div>
                       <Label htmlFor="address">Shipping Address</Label>
                       <Textarea
@@ -188,13 +316,41 @@ export default function Checkout() {
                         rows={4}
                       />
                     </div>
+
+                    <div>
+                      <Label>Payment Method</Label>
+                      <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="mt-2">
+                        <div className="flex items-center space-x-2 border rounded-lg p-4">
+                          <RadioGroupItem value="payfast" id="payfast" />
+                          <Label htmlFor="payfast" className="flex-1 cursor-pointer">
+                            <div className="font-medium">PayFast</div>
+                            <div className="text-sm text-muted-foreground">Secure payment via PayFast</div>
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2 border rounded-lg p-4">
+                          <RadioGroupItem value="stripe" id="stripe" />
+                          <Label htmlFor="stripe" className="flex-1 cursor-pointer">
+                            <div className="font-medium">Credit/Debit Card</div>
+                            <div className="text-sm text-muted-foreground">Powered by Stripe</div>
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2 border rounded-lg p-4 opacity-50">
+                          <RadioGroupItem value="paypal" id="paypal" disabled />
+                          <Label htmlFor="paypal" className="flex-1 cursor-not-allowed">
+                            <div className="font-medium">PayPal</div>
+                            <div className="text-sm text-muted-foreground">Coming soon</div>
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
                     <Button
                       type="submit"
                       className="w-full"
                       size="lg"
                       disabled={submitting}
                     >
-                      {submitting ? "Processing..." : "Place Order"}
+                      {submitting ? "Processing..." : "Continue to Payment"}
                     </Button>
                   </form>
                 </CardContent>
@@ -225,18 +381,62 @@ export default function Checkout() {
                       </div>
                     ))}
                   </div>
+                  
+                  {/* Discount Code */}
+                  <div className="border-t pt-4 space-y-2">
+                    <Label htmlFor="discount">Discount Code</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="discount"
+                        placeholder="Enter code"
+                        value={discountCode}
+                        onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                        disabled={!!appliedDiscount}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleApplyDiscount}
+                        disabled={checkingDiscount || !!appliedDiscount || !discountCode.trim()}
+                      >
+                        {checkingDiscount ? "..." : appliedDiscount ? "✓" : "Apply"}
+                      </Button>
+                    </div>
+                    {appliedDiscount && (
+                      <div className="flex items-center justify-between text-sm text-green-600">
+                        <span>✓ {appliedDiscount.description || appliedDiscount.code}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAppliedDiscount(null);
+                            setDiscountCode("");
+                          }}
+                          className="underline"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="border-t pt-4 space-y-2">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Subtotal</span>
-                      <span>R{calculateTotal().toFixed(2)}</span>
+                      <span>R{calculateSubtotal().toFixed(2)}</span>
                     </div>
+                    {appliedDiscount && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Discount ({appliedDiscount.code})</span>
+                        <span>-R{appliedDiscount.amount.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Shipping</span>
                       <span>Free</span>
                     </div>
                     <div className="border-t pt-2 flex justify-between text-lg font-bold">
                       <span>Total</span>
-                      <span className="text-[hsl(var(--luxury-gold))]">
+                      <span className="text-primary">
                         R{calculateTotal().toFixed(2)}
                       </span>
                     </div>
