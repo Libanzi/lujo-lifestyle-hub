@@ -1,0 +1,218 @@
+import { Navigation } from "@/components/Navigation";
+import { Footer } from "@/components/Footer";
+import { useAdmin } from "@/hooks/useAdmin";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+
+interface OrderItem {
+  id: string;
+  quantity: number;
+  price: number;
+  product: {
+    name: string;
+    image_url: string;
+  };
+}
+
+interface Order {
+  id: string;
+  order_number: string;
+  created_at: string;
+  status: string;
+  total_amount: number;
+  shipping_address: string;
+  user_id: string;
+  user_email?: string;
+  user_name?: string;
+}
+
+const AdminOrders = () => {
+  const { isAdmin, loading: adminLoading } = useAdmin();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!adminLoading && isAdmin) {
+      loadOrders();
+    }
+  }, [adminLoading, isAdmin]);
+
+  const loadOrders = async () => {
+    setLoading(true);
+    const { data: ordersData, error } = await supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({ title: "Error loading orders", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    // Fetch user profiles for each order
+    const ordersWithProfiles = await Promise.all(
+      (ordersData || []).map(async (order) => {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("email, full_name")
+          .eq("id", order.user_id)
+          .maybeSingle();
+
+        return {
+          ...order,
+          user_email: profile?.email || "Unknown",
+          user_name: profile?.full_name || "Unknown",
+        };
+      })
+    );
+
+    setOrders(ordersWithProfiles);
+    setLoading(false);
+  };
+
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: newStatus })
+      .eq("id", orderId);
+
+    if (error) {
+      toast({ title: "Error updating order", variant: "destructive" });
+    } else {
+      toast({ title: "Order status updated" });
+      loadOrders();
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-500";
+      case "processing":
+        return "bg-blue-500";
+      case "shipped":
+        return "bg-purple-500";
+      case "delivered":
+        return "bg-green-500";
+      case "cancelled":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  if (adminLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (!isAdmin) {
+    navigate("/");
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navigation />
+      <main className="flex-1 py-16">
+        <div className="container px-4">
+          <h1 className="text-4xl font-bold mb-8">Manage Orders</h1>
+
+          {loading ? (
+            <p>Loading orders...</p>
+          ) : (
+            <div className="space-y-4">
+              {orders.map((order) => (
+                <Card key={order.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle>Order #{order.order_number}</CardTitle>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {new Date(order.created_at).toLocaleDateString()} at{" "}
+                          {new Date(order.created_at).toLocaleTimeString()}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Customer: {order.user_name} ({order.user_email})
+                        </p>
+                      </div>
+                      <Badge className={getStatusColor(order.status)}>
+                        {order.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="font-semibold mb-2">Shipping Address:</p>
+                        <p className="text-sm text-muted-foreground">{order.shipping_address}</p>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold mb-2">Total Amount:</p>
+                        <p className="text-lg text-[hsl(var(--luxury-gold))]">
+                          R{order.total_amount.toFixed(2)}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="font-semibold mb-2">Update Status:</p>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateOrderStatus(order.id, "pending")}
+                          >
+                            Pending
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateOrderStatus(order.id, "processing")}
+                          >
+                            Processing
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateOrderStatus(order.id, "shipped")}
+                          >
+                            Shipped
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateOrderStatus(order.id, "delivered")}
+                          >
+                            Delivered
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => updateOrderStatus(order.id, "cancelled")}
+                          >
+                            Cancelled
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
+export default AdminOrders;

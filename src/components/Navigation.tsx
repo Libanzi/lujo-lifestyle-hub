@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Search, ShoppingCart, User, Heart, Menu, LogOut, Package, X } from "lucide-react";
+import { Search, ShoppingCart, User, Heart, Menu, LogOut, Package, X, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { MiniCart } from "./MiniCart";
 import { AuthModal } from "./AuthModal";
+import { useAdmin } from "@/hooks/useAdmin";
 
 export const Navigation = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export const Navigation = () => {
   const [isMiniCartOpen, setIsMiniCartOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const { isAdmin } = useAdmin();
 
   useEffect(() => {
     // Check current session
@@ -177,6 +179,19 @@ export const Navigation = () => {
                   <Heart className="h-5 w-5" />
                 </Button>
 
+                {/* Admin Panel (only for admins) */}
+                {isAdmin && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => navigate("/admin")} 
+                    className="hidden md:flex" 
+                    title="Admin Panel"
+                  >
+                    <Shield className="h-5 w-5 text-[hsl(var(--luxury-gold))]" />
+                  </Button>
+                )}
+
                 {/* Cart with Mini Cart */}
                 <Button 
                   variant="ghost" 
@@ -272,6 +287,20 @@ export const Navigation = () => {
                 <Heart className="h-5 w-5 mr-2" />
                 Wishlist
               </Button>
+
+              {isAdmin && (
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start" 
+                  onClick={() => { 
+                    navigate("/admin"); 
+                    setIsMobileMenuOpen(false); 
+                  }}
+                >
+                  <Shield className="h-5 w-5 mr-2 text-[hsl(var(--luxury-gold))]" />
+                  Admin Panel
+                </Button>
+              )}
 
               {user ? (
                 <>

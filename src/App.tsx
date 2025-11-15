@@ -27,6 +27,10 @@ import Terms from "./pages/Terms";
 import Products from "./pages/Products";
 import NewArrivals from "./pages/NewArrivals";
 import Chat from "./pages/Chat";
+import Admin from "./pages/Admin";
+import AdminProducts from "./pages/AdminProducts";
+import AdminCategories from "./pages/AdminCategories";
+import AdminOrders from "./pages/AdminOrders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +66,10 @@ const App = () => (
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/chat" element={<Chat />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/products" element={<AdminProducts />} />
+          <Route path="/admin/categories" element={<AdminCategories />} />
+          <Route path="/admin/orders" element={<AdminOrders />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
