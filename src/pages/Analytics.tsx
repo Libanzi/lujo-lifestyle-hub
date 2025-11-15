@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useNavigate } from "react-router-dom";
 import { DollarSign, Package, ShoppingCart, TrendingUp, Users } from "lucide-react";
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 interface AnalyticsData {
   totalRevenue: number;
@@ -15,6 +16,7 @@ interface AnalyticsData {
   recentOrders: any[];
   topProducts: any[];
   revenueByMonth: any[];
+  ordersByStatus: any[];
 }
 
 export default function Analytics() {
@@ -29,6 +31,7 @@ export default function Analytics() {
     recentOrders: [],
     topProducts: [],
     revenueByMonth: [],
+    ordersByStatus: [],
   });
 
   useEffect(() => {
@@ -111,6 +114,21 @@ export default function Analytics() {
         revenue,
       }));
 
+      // Calculate orders by status
+      const statusCounts = orders?.reduce((acc: any, order) => {
+        const status = order.payment_status || 'pending';
+        if (!acc[status]) {
+          acc[status] = 0;
+        }
+        acc[status]++;
+        return acc;
+      }, {});
+
+      const ordersByStatus = Object.entries(statusCounts || {}).map(([status, count]) => ({
+        status,
+        count,
+      }));
+
       setAnalytics({
         totalRevenue,
         totalOrders: orders?.length || 0,
@@ -119,6 +137,7 @@ export default function Analytics() {
         recentOrders: recentOrders || [],
         topProducts: sortedProducts,
         revenueByMonth,
+        ordersByStatus,
       });
     } catch (error) {
       console.error("Error loading analytics:", error);
@@ -262,21 +281,78 @@ export default function Analytics() {
             </Card>
           </div>
 
-          {/* Revenue by Month */}
-          {analytics.revenueByMonth.length > 0 && (
+          {/* Charts Section */}
+          <div className="grid md:grid-cols-2 gap-8 mt-8">
+            {/* Revenue Trend Chart */}
+            {analytics.revenueByMonth.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Revenue Trend</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={analytics.revenueByMonth}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip formatter={(value: number) => `R${value.toFixed(2)}`} />
+                      <Legend />
+                      <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} name="Revenue" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Top Products Chart */}
+            {analytics.topProducts.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Top Products Sales</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={analytics.topProducts}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                      <YAxis />
+                      <Tooltip formatter={(value: number) => `${value} units`} />
+                      <Legend />
+                      <Bar dataKey="totalSold" fill="hsl(var(--primary))" name="Units Sold" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Order Status Distribution */}
+          {analytics.ordersByStatus.length > 0 && (
             <Card className="mt-8">
               <CardHeader>
-                <CardTitle>Revenue by Month</CardTitle>
+                <CardTitle>Order Status Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {analytics.revenueByMonth.map((item: any) => (
-                    <div key={item.month} className="flex justify-between items-center">
-                      <span className="text-muted-foreground">{item.month}</span>
-                      <span className="font-medium">R{item.revenue.toFixed(2)}</span>
-                    </div>
-                  ))}
-                </div>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={analytics.ordersByStatus}
+                      dataKey="count"
+                      nameKey="status"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      label={(entry) => `${entry.status}: ${entry.count}`}
+                    >
+                      {analytics.ordersByStatus.map((entry, index) => {
+                        const colors = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
+                        return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                      })}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
           )}
