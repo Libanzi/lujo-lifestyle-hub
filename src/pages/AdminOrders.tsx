@@ -99,7 +99,26 @@ const AdminOrders = () => {
     if (error) {
       toast({ title: "Error updating order", variant: "destructive" });
     } else {
-      toast({ title: "Order status updated" });
+      // Add status history entry
+      await supabase
+        .from("order_status_history")
+        .insert({
+          order_id: orderId,
+          status: newStatus,
+          notes: `Status updated to ${newStatus}`,
+        });
+
+      // Send email notification based on status
+      const emailType = newStatus === 'shipped' ? 'shipped' : 'status_update';
+      const { error: emailError } = await supabase.functions.invoke('send-order-email', {
+        body: { orderId, type: emailType }
+      });
+
+      if (emailError) {
+        console.error('Error sending email notification:', emailError);
+      }
+
+      toast({ title: "Order status updated and customer notified" });
       loadOrders();
     }
   };
