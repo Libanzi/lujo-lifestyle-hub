@@ -1,5 +1,6 @@
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { LowStockAlert } from "@/components/LowStockAlert";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";

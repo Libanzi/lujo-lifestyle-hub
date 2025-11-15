@@ -1,5 +1,6 @@
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { OrderDetailsModal } from "@/components/OrderDetailsModal";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +38,8 @@ const AdminOrders = () => {
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     if (!adminLoading && isAdmin) {
@@ -48,7 +51,16 @@ const AdminOrders = () => {
     setLoading(true);
     const { data: ordersData, error } = await supabase
       .from("orders")
-      .select("*")
+      .select(`
+        *,
+        order_items (
+          *,
+          product:products (
+            name,
+            image_url
+          )
+        )
+      `)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -163,44 +175,15 @@ const AdminOrders = () => {
                       </div>
 
                       <div>
-                        <p className="font-semibold mb-2">Update Status:</p>
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateOrderStatus(order.id, "pending")}
-                          >
-                            Pending
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateOrderStatus(order.id, "processing")}
-                          >
-                            Processing
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateOrderStatus(order.id, "shipped")}
-                          >
-                            Shipped
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateOrderStatus(order.id, "delivered")}
-                          >
-                            Delivered
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => updateOrderStatus(order.id, "cancelled")}
-                          >
-                            Cancelled
-                          </Button>
-                        </div>
+                        <Button
+                          onClick={() => {
+                            setSelectedOrder(order);
+                            setModalOpen(true);
+                          }}
+                          className="w-full"
+                        >
+                          Manage Order
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -210,6 +193,16 @@ const AdminOrders = () => {
           )}
         </div>
       </main>
+      
+      {selectedOrder && (
+        <OrderDetailsModal
+          order={selectedOrder}
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          onUpdate={loadOrders}
+        />
+      )}
+      
       <Footer />
     </div>
   );
