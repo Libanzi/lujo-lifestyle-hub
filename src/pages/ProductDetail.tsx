@@ -1,3 +1,4 @@
+import { ProductReviews } from "@/components/ProductReviews";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -298,6 +299,11 @@ export default function ProductDetail() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Product Reviews Section */}
+        <div className="container max-w-6xl mt-12">
+          <ProductReviews productId={product.id} />
         </div>
       </main>
       <Footer />
