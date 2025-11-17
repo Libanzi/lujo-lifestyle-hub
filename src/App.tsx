@@ -38,6 +38,8 @@ import Loyalty from "./pages/Loyalty";
 import Compare from "./pages/Compare";
 import AdminMonitoring from "./pages/AdminMonitoring";
 import AdminSettings from "./pages/AdminSettings";
+import WordPressPage from "./pages/WordPressPage";
+import WordPressProducts from "./pages/WordPressProducts";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -84,6 +86,8 @@ const App = () => (
           <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/loyalty" element={<Loyalty />} />
           <Route path="/compare" element={<Compare />} />
+          <Route path="/wp/page/:slug" element={<WordPressPage />} />
+          <Route path="/wp/products" element={<WordPressProducts />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
