@@ -37,6 +37,7 @@ import Analytics from "./pages/Analytics";
 import Loyalty from "./pages/Loyalty";
 import Compare from "./pages/Compare";
 import AdminMonitoring from "./pages/AdminMonitoring";
+import AdminSettings from "./pages/AdminSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -80,6 +81,7 @@ const App = () => (
           <Route path="/admin/discounts" element={<AdminDiscounts />} />
           <Route path="/admin/monitoring" element={<AdminMonitoring />} />
           <Route path="/admin/analytics" element={<Analytics />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/loyalty" element={<Loyalty />} />
           <Route path="/compare" element={<Compare />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

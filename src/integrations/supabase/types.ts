@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_settings: {
+        Row: {
+          created_at: string | null
+          discord_alerts_enabled: boolean
+          discord_webhook_url: string | null
+          email_alerts_enabled: boolean
+          error_rate_threshold: number
+          execution_time_threshold: number
+          id: string
+          slack_alerts_enabled: boolean
+          slack_webhook_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          discord_alerts_enabled?: boolean
+          discord_webhook_url?: string | null
+          email_alerts_enabled?: boolean
+          error_rate_threshold?: number
+          execution_time_threshold?: number
+          id?: string
+          slack_alerts_enabled?: boolean
+          slack_webhook_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          discord_alerts_enabled?: boolean
+          discord_webhook_url?: string | null
+          email_alerts_enabled?: boolean
+          error_rate_threshold?: number
+          execution_time_threshold?: number
+          id?: string
+          slack_alerts_enabled?: boolean
+          slack_webhook_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           created_at: string | null

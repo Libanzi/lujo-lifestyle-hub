@@ -47,11 +47,23 @@ export class FunctionLogger {
     });
 
     // Check if we need to send an alert for this error
-    await this.checkAndSendAlert(errorMessage, data);
+    await this.checkAndSendAlert(errorMessage, executionTime, data);
   }
 
-  private async checkAndSendAlert(errorMessage: string, data: Partial<LogEntry>) {
+  private async checkAndSendAlert(errorMessage: string, executionTime: number, data: Partial<LogEntry>) {
     try {
+      // Get alert settings
+      const { data: settings, error: settingsError } = await this.supabase
+        .from('alert_settings')
+        .select('*')
+        .limit(1)
+        .single();
+
+      if (settingsError || !settings) {
+        console.error('Error fetching alert settings:', settingsError);
+        return;
+      }
+
       // Check error rate for this function in the last hour
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       
@@ -69,10 +81,10 @@ export class FunctionLogger {
       const totalCalls = recentLogs?.length || 0;
       const errorCalls = recentLogs?.filter(log => log.status === 'error').length || 0;
       
-      // If we have at least 10 calls and error rate > 50%, send alert
-      if (totalCalls >= 10 && (errorCalls / totalCalls) > 0.5) {
+      // Check if error rate exceeds threshold
+      if (totalCalls >= 10 && (errorCalls / totalCalls) * 100 > settings.error_rate_threshold) {
         const errorRate = Math.round((errorCalls / totalCalls) * 100);
-        await this.sendAlert('high_error_rate', {
+        await this.sendAlert('high_error_rate', settings, {
           error_rate: errorRate,
           total_calls: totalCalls,
           error_calls: errorCalls,
@@ -80,10 +92,18 @@ export class FunctionLogger {
         });
       }
 
+      // Check if execution time exceeds threshold
+      if (executionTime > settings.execution_time_threshold) {
+        await this.sendAlert('performance_degradation', settings, {
+          execution_time_ms: executionTime,
+          threshold_ms: settings.execution_time_threshold,
+        });
+      }
+
       // For critical functions, always alert on any error
       const criticalFunctions = ['process-stripe-payment', 'process-payfast-payment', 'wordpress-auth-sync'];
       if (criticalFunctions.includes(this.functionName)) {
-        await this.sendAlert('critical_function_failure', {
+        await this.sendAlert('critical_function_failure', settings, {
           error_message: errorMessage,
           metadata: data.metadata,
         });
@@ -93,17 +113,50 @@ export class FunctionLogger {
     }
   }
 
-  private async sendAlert(alertType: string, details: Record<string, any>) {
+  private async sendAlert(alertType: string, settings: any, details: Record<string, any>) {
     try {
-      await this.supabase.functions.invoke('send-admin-alert', {
-        body: {
-          alert_type: alertType,
-          function_name: this.functionName,
-          error_rate: details.error_rate,
-          error_message: details.error_message,
-          details,
-        },
-      });
+      // Send email alert if enabled
+      if (settings.email_alerts_enabled) {
+        await this.supabase.functions.invoke('send-admin-alert', {
+          body: {
+            alert_type: alertType,
+            function_name: this.functionName,
+            error_rate: details.error_rate,
+            error_message: details.error_message,
+            details,
+          },
+        });
+      }
+
+      // Send Slack alert if enabled
+      if (settings.slack_alerts_enabled && settings.slack_webhook_url) {
+        await this.supabase.functions.invoke('send-webhook-alert', {
+          body: {
+            webhook_url: settings.slack_webhook_url,
+            webhook_type: 'slack',
+            alert_type: alertType,
+            function_name: this.functionName,
+            error_rate: details.error_rate,
+            error_message: details.error_message,
+            details,
+          },
+        });
+      }
+
+      // Send Discord alert if enabled
+      if (settings.discord_alerts_enabled && settings.discord_webhook_url) {
+        await this.supabase.functions.invoke('send-webhook-alert', {
+          body: {
+            webhook_url: settings.discord_webhook_url,
+            webhook_type: 'discord',
+            alert_type: alertType,
+            function_name: this.functionName,
+            error_rate: details.error_rate,
+            error_message: details.error_message,
+            details,
+          },
+        });
+      }
     } catch (error) {
       console.error('Failed to send alert:', error);
     }
