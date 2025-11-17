@@ -1,10 +1,26 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Zod validation schema
+const WordPressAuthSchema = z.object({
+  wordpressToken: z.string()
+    .min(1, "WordPress token is required")
+    .max(2000, "Token too long"),
+  wordpressUrl: z.string()
+    .url("Invalid WordPress URL")
+    .min(1, "WordPress URL is required")
+    .max(500, "URL too long")
+    .refine(
+      (url) => url.startsWith('http://') || url.startsWith('https://'),
+      "URL must start with http:// or https://"
+    ),
+});
 
 interface WordPressUser {
   id: number;
@@ -20,11 +36,25 @@ serve(async (req) => {
   }
 
   try {
-    const { wordpressToken, wordpressUrl } = await req.json();
-
-    if (!wordpressToken || !wordpressUrl) {
-      throw new Error('WordPress token and URL are required');
+    const body = await req.json();
+    
+    // Validate input with Zod
+    const validation = WordPressAuthSchema.safeParse(body);
+    if (!validation.success) {
+      console.error('Validation error:', validation.error.errors);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: validation.error.errors[0]?.message || 'Invalid input',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
     }
+
+    const { wordpressToken, wordpressUrl } = validation.data;
 
     // Verify WordPress JWT token and get user info
     const wpResponse = await fetch(`${wordpressUrl}/wp-json/wp/v2/users/me`, {
@@ -38,6 +68,11 @@ serve(async (req) => {
     }
 
     const wpUser: WordPressUser = await wpResponse.json();
+
+    // Validate WordPress user response
+    if (!wpUser.email || !wpUser.id) {
+      throw new Error('Invalid WordPress user data');
+    }
 
     // Initialize Supabase admin client
     const supabaseAdmin = createClient(

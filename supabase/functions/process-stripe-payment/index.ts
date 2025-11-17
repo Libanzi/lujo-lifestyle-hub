@@ -1,17 +1,24 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.21.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface StripePaymentRequest {
-  orderId: string;
-  successUrl: string;
-  cancelUrl: string;
-}
+// Zod validation schema
+const StripePaymentSchema = z.object({
+  orderId: z.string()
+    .uuid("Invalid order ID format"),
+  successUrl: z.string()
+    .url("Invalid success URL")
+    .max(500, "Success URL too long"),
+  cancelUrl: z.string()
+    .url("Invalid cancel URL")
+    .max(500, "Cancel URL too long"),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -29,7 +36,24 @@ serve(async (req) => {
       }
     );
 
-    const { orderId, successUrl, cancelUrl }: StripePaymentRequest = await req.json();
+    const body = await req.json();
+    
+    // Validate input with Zod
+    const validation = StripePaymentSchema.safeParse(body);
+    if (!validation.success) {
+      console.error('Validation error:', validation.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          error: validation.error.errors[0]?.message || 'Invalid input' 
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const { orderId, successUrl, cancelUrl } = validation.data;
 
     // Get order details with items
     const { data: order, error: orderError } = await supabaseClient

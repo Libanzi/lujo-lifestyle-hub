@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useWordPressPosts } from "@/hooks/useWordPressPosts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
+import { sanitizeHTML } from "@/lib/sanitize";
 
 const Blog = () => {
   const { data: posts, isLoading, error } = useWordPressPosts(1, 12);
@@ -55,7 +56,7 @@ const Blog = () => {
                       />
                     )}
                     <CardHeader>
-                      <CardTitle dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
+                      <CardTitle dangerouslySetInnerHTML={{ __html: sanitizeHTML(post.title.rendered) }} />
                       <p className="text-sm text-muted-foreground">
                         {new Date(post.date).toLocaleDateString("en-US", {
                           year: "numeric",
@@ -67,7 +68,7 @@ const Blog = () => {
                     <CardContent>
                       <div 
                         className="text-muted-foreground line-clamp-3"
-                        dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHTML(post.excerpt.rendered) }}
                       />
                     </CardContent>
                   </Card>
