@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navigation } from "@/components/Navigation";
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ShoppingBag } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { HCaptchaComponent, HCaptchaHandle } from "@/components/HCaptcha";
 
 interface CartItem {
   id: string;
@@ -34,6 +35,8 @@ export default function Checkout() {
   const [discountCode, setDiscountCode] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState<any>(null);
   const [checkingDiscount, setCheckingDiscount] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string>("");
+  const captchaRef = useRef<HCaptchaHandle>(null);
 
   useEffect(() => {
     checkUser();
@@ -145,9 +148,24 @@ export default function Checkout() {
       return;
     }
 
+    // Trigger captcha verification
+    if (!captchaToken) {
+      captchaRef.current?.execute();
+      return;
+    }
+
     setSubmitting(true);
 
     try {
+      // Verify captcha token
+      const { data: captchaResult, error: captchaError } = await supabase.functions.invoke('verify-captcha', {
+        body: { token: captchaToken },
+      });
+
+      if (captchaError || !captchaResult?.success) {
+        throw new Error('Captcha verification failed. Please try again.');
+      }
+
       const orderNumber = `ORD-${Date.now()}`;
       const totalAmount = calculateTotal();
       const discountAmount = appliedDiscount?.amount || 0;
@@ -301,9 +319,34 @@ export default function Checkout() {
         description: error.message,
         variant: "destructive",
       });
+      // Reset captcha on error
+      setCaptchaToken("");
+      captchaRef.current?.resetCaptcha();
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleCaptchaVerify = (token: string) => {
+    setCaptchaToken(token);
+    // Auto-submit form after captcha verification
+    const form = document.querySelector('form');
+    if (form) {
+      form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }
+  };
+
+  const handleCaptchaError = () => {
+    setCaptchaToken("");
+    toast({
+      title: "Captcha Error",
+      description: "Failed to load captcha. Please refresh the page.",
+      variant: "destructive",
+    });
+  };
+
+  const handleCaptchaExpire = () => {
+    setCaptchaToken("");
   };
 
   if (loading) {
@@ -376,6 +419,13 @@ export default function Checkout() {
                         </div>
                       </RadioGroup>
                     </div>
+
+                    <HCaptchaComponent
+                      ref={captchaRef}
+                      onVerify={handleCaptchaVerify}
+                      onError={handleCaptchaError}
+                      onExpire={handleCaptchaExpire}
+                    />
 
                     <Button
                       type="submit"

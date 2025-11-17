@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { SecurityLogger, checkRateLimit } from "../_shared/security-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,11 +28,33 @@ const PayFastPaymentSchema = z.object({
 });
 
 serve(async (req) => {
+  const logger = new SecurityLogger('process-payfast-payment', req);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    logger.logRequest(req.method);
+
+    // Rate limiting: 10 requests per minute per IP
+    const clientIp = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    if (!checkRateLimit(`payfast:${clientIp}`, 10, 60 * 1000)) {
+      logger.logSuspiciousActivity('rate_limit_exceeded', {
+        identifier: clientIp,
+        limit: '10 requests per minute',
+      });
+      return new Response(
+        JSON.stringify({ 
+          error: 'Too many requests. Please try again later.' 
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -44,10 +67,24 @@ serve(async (req) => {
 
     const body = await req.json();
     
+    // Check for suspicious patterns
+    const suspiciousCheck = logger.detectSuspiciousPatterns(JSON.stringify(body));
+    if (suspiciousCheck.isSuspicious) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid request' 
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     // Validate input with Zod
     const validation = PayFastPaymentSchema.safeParse(body);
     if (!validation.success) {
-      console.error('Validation error:', validation.error.errors);
+      logger.logValidationFailure(validation.error.errors, body);
       return new Response(
         JSON.stringify({ 
           error: validation.error.errors[0]?.message || 'Invalid input' 
@@ -58,6 +95,8 @@ serve(async (req) => {
         }
       );
     }
+
+    logger.logValidationSuccess(validation.data);
 
     const { orderId, amount, returnUrl, cancelUrl, notifyUrl } = validation.data;
 
@@ -74,8 +113,11 @@ serve(async (req) => {
     // Verify user owns this order
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user || user.id !== order.user_id) {
+      logger.logAuthFailure('unauthorized_order_access', user?.email);
       throw new Error('Unauthorized');
     }
+
+    logger.logAuthSuccess(user.id);
 
     // PayFast configuration
     const merchantId = Deno.env.get('PAYFAST_MERCHANT_ID');
@@ -83,6 +125,7 @@ serve(async (req) => {
     const passphrase = Deno.env.get('PAYFAST_PASSPHRASE');
 
     if (!merchantId || !merchantKey || !passphrase) {
+      logger.logError('PayFast credentials not configured');
       throw new Error('PayFast credentials not configured');
     }
 
@@ -130,6 +173,7 @@ serve(async (req) => {
       }
     );
   } catch (error: any) {
+    logger.logError(error instanceof Error ? error : new Error(String(error)));
     console.error('Error processing PayFast payment:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
