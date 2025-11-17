@@ -6,8 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Trash2, Wand2 } from "lucide-react";
+import { Loader2, Trash2, Wand2, Eye, ArrowRight, Plus, Minus, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface WordPressCategory {
   id: number;
@@ -31,7 +33,9 @@ interface CategoryMapping {
 export const WordPressCategoryMapper = () => {
   const queryClient = useQueryClient();
   const [mappings, setMappings] = useState<CategoryMapping[]>([]);
+  const [originalMappings, setOriginalMappings] = useState<CategoryMapping[]>([]);
   const [wpUrl, setWpUrl] = useState<string>("");
+  const [showPreview, setShowPreview] = useState(false);
 
   // Fetch WordPress settings to get URL
   const { data: settings } = useQuery({
@@ -95,6 +99,7 @@ export const WordPressCategoryMapper = () => {
       }));
       
       setMappings(newMappings);
+      setOriginalMappings(newMappings);
     }
   }, [wpCategories, settings]);
 
@@ -119,6 +124,8 @@ export const WordPressCategoryMapper = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wordpress-settings'] });
+      setOriginalMappings([...mappings]);
+      setShowPreview(false);
       toast.success('Category mappings saved successfully');
     },
     onError: (error) => {
@@ -217,6 +224,32 @@ export const WordPressCategoryMapper = () => {
       toast.info('No matching categories found');
     }
   };
+
+  const getChangeType = (wpSlug: string): 'added' | 'removed' | 'modified' | 'unchanged' => {
+    const original = originalMappings.find(m => m.wpSlug === wpSlug);
+    const current = mappings.find(m => m.wpSlug === wpSlug);
+    
+    if (!original?.supabaseCategoryId && current?.supabaseCategoryId) return 'added';
+    if (original?.supabaseCategoryId && !current?.supabaseCategoryId) return 'removed';
+    if (original?.supabaseCategoryId !== current?.supabaseCategoryId) return 'modified';
+    return 'unchanged';
+  };
+
+  const getSupabaseCategoryName = (categoryId: string | null) => {
+    if (!categoryId) return null;
+    return supabaseCategories.find(cat => cat.id === categoryId)?.name || null;
+  };
+
+  const hasChanges = () => {
+    return mappings.some((mapping, index) => {
+      const original = originalMappings[index];
+      return mapping.supabaseCategoryId !== original?.supabaseCategoryId;
+    });
+  };
+
+  const changedMappings = mappings.filter(mapping => 
+    getChangeType(mapping.wpSlug) !== 'unchanged'
+  );
 
   if (!wpUrl) {
     return (
@@ -335,8 +368,16 @@ export const WordPressCategoryMapper = () => {
 
         <div className="flex justify-end gap-2">
           <Button
+            variant="outline"
+            onClick={() => setShowPreview(true)}
+            disabled={!hasChanges()}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            Preview Changes
+          </Button>
+          <Button
             onClick={() => saveMappingsMutation.mutate()}
-            disabled={saveMappingsMutation.isPending}
+            disabled={saveMappingsMutation.isPending || !hasChanges()}
           >
             {saveMappingsMutation.isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -345,6 +386,113 @@ export const WordPressCategoryMapper = () => {
           </Button>
         </div>
       </CardContent>
+
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Preview Category Mapping Changes</DialogTitle>
+            <DialogDescription>
+              Review the changes before saving. {changedMappings.length} {changedMappings.length === 1 ? 'change' : 'changes'} detected.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[400px] pr-4">
+            <div className="space-y-4">
+              {changedMappings.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  No changes to preview
+                </p>
+              ) : (
+                changedMappings.map((mapping) => {
+                  const changeType = getChangeType(mapping.wpSlug);
+                  const original = originalMappings.find(m => m.wpSlug === mapping.wpSlug);
+                  const originalCatName = getSupabaseCategoryName(original?.supabaseCategoryId || null);
+                  const currentCatName = getSupabaseCategoryName(mapping.supabaseCategoryId);
+                  
+                  return (
+                    <div key={mapping.wpSlug} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium">{mapping.wpName}</div>
+                        {changeType === 'added' && (
+                          <Badge variant="default" className="bg-green-500">
+                            <Plus className="mr-1 h-3 w-3" />
+                            Added
+                          </Badge>
+                        )}
+                        {changeType === 'removed' && (
+                          <Badge variant="destructive">
+                            <Minus className="mr-1 h-3 w-3" />
+                            Removed
+                          </Badge>
+                        )}
+                        {changeType === 'modified' && (
+                          <Badge variant="secondary">
+                            <Edit className="mr-1 h-3 w-3" />
+                            Modified
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="text-xs text-muted-foreground">
+                        Slug: {mapping.wpSlug}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 text-sm">
+                        {changeType === 'removed' ? (
+                          <>
+                            <div className="flex-1 px-3 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded">
+                              {originalCatName || 'No mapping'}
+                            </div>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <div className="flex-1 px-3 py-2 bg-muted/50 border rounded">
+                              No mapping
+                            </div>
+                          </>
+                        ) : changeType === 'added' ? (
+                          <>
+                            <div className="flex-1 px-3 py-2 bg-muted/50 border rounded">
+                              No mapping
+                            </div>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <div className="flex-1 px-3 py-2 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded">
+                              {currentCatName || 'Unknown'}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex-1 px-3 py-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded">
+                              {originalCatName || 'No mapping'}
+                            </div>
+                            <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <div className="flex-1 px-3 py-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded">
+                              {currentCatName || 'No mapping'}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </ScrollArea>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPreview(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => saveMappingsMutation.mutate()}
+              disabled={saveMappingsMutation.isPending}
+            >
+              {saveMappingsMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Confirm & Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
