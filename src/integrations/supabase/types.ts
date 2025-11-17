@@ -725,6 +725,7 @@ export type Database = {
       wordpress_settings: {
         Row: {
           auto_sync_enabled: boolean
+          category_mappings: Json | null
           created_at: string | null
           id: string
           sync_categories: boolean
@@ -735,6 +736,7 @@ export type Database = {
         }
         Insert: {
           auto_sync_enabled?: boolean
+          category_mappings?: Json | null
           created_at?: string | null
           id?: string
           sync_categories?: boolean
@@ -745,6 +747,7 @@ export type Database = {
         }
         Update: {
           auto_sync_enabled?: boolean
+          category_mappings?: Json | null
           created_at?: string | null
           id?: string
           sync_categories?: boolean

@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WordPressSettings } from "@/components/WordPressSettings";
 import { WordPressSyncHistory } from "@/components/WordPressSyncHistory";
+import { WordPressCategoryMapper } from "@/components/WordPressCategoryMapper";
 
 const WordPressAdmin = () => {
   const { toast } = useToast();
@@ -75,7 +76,7 @@ const WordPressAdmin = () => {
           </div>
 
           <Tabs defaultValue="settings" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="settings">
                 <SettingsIcon className="mr-2 h-4 w-4" />
                 Settings
@@ -83,6 +84,10 @@ const WordPressAdmin = () => {
               <TabsTrigger value="history">
                 <History className="mr-2 h-4 w-4" />
                 History
+              </TabsTrigger>
+              <TabsTrigger value="category-mapper">
+                <Database className="mr-2 h-4 w-4" />
+                Category Mapper
               </TabsTrigger>
               <TabsTrigger value="sync">
                 <Database className="mr-2 h-4 w-4" />
@@ -104,6 +109,10 @@ const WordPressAdmin = () => {
 
             <TabsContent value="history">
               <WordPressSyncHistory />
+            </TabsContent>
+
+            <TabsContent value="category-mapper">
+              <WordPressCategoryMapper />
             </TabsContent>
 
             <TabsContent value="sync" className="space-y-6">
