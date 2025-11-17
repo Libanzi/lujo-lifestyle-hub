@@ -21,6 +21,7 @@ import FAQ from "./pages/FAQ";
 import SizeGuide from "./pages/SizeGuide";
 import About from "./pages/About";
 import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import Careers from "./pages/Careers";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -66,6 +67,7 @@ const App = () => (
           <Route path="/size-guide" element={<SizeGuide />} />
           <Route path="/about" element={<About />} />
           <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/careers" element={<Careers />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
