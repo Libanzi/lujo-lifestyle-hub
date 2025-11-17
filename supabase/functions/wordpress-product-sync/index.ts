@@ -31,6 +31,11 @@ interface WordPressProduct {
     "wp:featuredmedia"?: Array<{
       source_url: string;
     }>;
+    "wp:term"?: Array<Array<{
+      id: number;
+      name: string;
+      slug: string;
+    }>>;
   };
 }
 

@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useWordPressPosts } from "@/hooks/useWordPressPosts";
 import { useWordPressProducts } from "@/hooks/useWordPressProducts";
-import { Loader2, RefreshCw, ExternalLink, Database, FileText, Package } from "lucide-react";
+import { Loader2, RefreshCw, ExternalLink, Database, FileText, Package, Clock } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -31,7 +31,8 @@ const WordPressAdmin = () => {
       const { data, error } = await supabase.functions.invoke('wordpress-product-sync', {
         body: { 
           wordpressUrl,
-          syncMode 
+          syncMode,
+          syncCategories: true
         },
       });
 
@@ -90,12 +91,19 @@ const WordPressAdmin = () => {
             <TabsContent value="sync" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>WordPress Product Sync</CardTitle>
+                  <CardTitle>WordPress Product & Category Sync</CardTitle>
                   <CardDescription>
-                    Import products from WordPress into your Supabase database
+                    Import products and categories from WordPress into your Supabase database. Automatic sync runs daily at 3:00 AM.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <Alert>
+                    <Clock className="h-4 w-4" />
+                    <AlertDescription>
+                      Automated synchronization is scheduled to run daily at 3:00 AM to keep your products and categories in sync with WordPress.
+                    </AlertDescription>
+                  </Alert>
+
                   <div className="space-y-2">
                     <Label htmlFor="wp-url">WordPress Site URL</Label>
                     <Input
