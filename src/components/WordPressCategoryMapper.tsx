@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Trash2, Plus } from "lucide-react";
+import { Loader2, Trash2, Wand2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface WordPressCategory {
   id: number;
@@ -24,6 +25,7 @@ interface CategoryMapping {
   wpSlug: string;
   wpName: string;
   supabaseCategoryId: string | null;
+  autoSuggested?: boolean;
 }
 
 export const WordPressCategoryMapper = () => {
@@ -139,10 +141,81 @@ export const WordPressCategoryMapper = () => {
     setMappings(prev => 
       prev.map(mapping => 
         mapping.wpSlug === wpSlug 
-          ? { ...mapping, supabaseCategoryId: null }
+          ? { ...mapping, supabaseCategoryId: null, autoSuggested: false }
           : mapping
       )
     );
+  };
+
+  const findBestMatch = (wpName: string, wpSlug: string): string | null => {
+    // Normalize strings for comparison
+    const normalize = (str: string) => 
+      str.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+    
+    const normalizedWpName = normalize(wpName);
+    const normalizedWpSlug = normalize(wpSlug);
+    
+    // First try exact name match
+    for (const cat of supabaseCategories) {
+      if (normalize(cat.name) === normalizedWpName) {
+        return cat.id;
+      }
+    }
+    
+    // Then try exact slug match
+    for (const cat of supabaseCategories) {
+      if (normalize(cat.slug) === normalizedWpSlug) {
+        return cat.id;
+      }
+    }
+    
+    // Then try partial name match
+    for (const cat of supabaseCategories) {
+      const normalizedCatName = normalize(cat.name);
+      if (normalizedCatName.includes(normalizedWpName) || 
+          normalizedWpName.includes(normalizedCatName)) {
+        return cat.id;
+      }
+    }
+    
+    // Finally try partial slug match
+    for (const cat of supabaseCategories) {
+      const normalizedCatSlug = normalize(cat.slug);
+      if (normalizedCatSlug.includes(normalizedWpSlug) || 
+          normalizedWpSlug.includes(normalizedCatSlug)) {
+        return cat.id;
+      }
+    }
+    
+    return null;
+  };
+
+  const handleAutoSuggest = () => {
+    let matchedCount = 0;
+    
+    setMappings(prev => 
+      prev.map(mapping => {
+        // Skip if already mapped
+        if (mapping.supabaseCategoryId) return mapping;
+        
+        const bestMatch = findBestMatch(mapping.wpName, mapping.wpSlug);
+        if (bestMatch) {
+          matchedCount++;
+          return {
+            ...mapping,
+            supabaseCategoryId: bestMatch,
+            autoSuggested: true
+          };
+        }
+        return mapping;
+      })
+    );
+    
+    if (matchedCount > 0) {
+      toast.success(`Auto-matched ${matchedCount} ${matchedCount === 1 ? 'category' : 'categories'}`);
+    } else {
+      toast.info('No matching categories found');
+    }
   };
 
   if (!wpUrl) {
@@ -177,10 +250,23 @@ export const WordPressCategoryMapper = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Category Mapping</CardTitle>
-        <CardDescription>
-          Map WordPress categories to Supabase categories for automatic sync
-        </CardDescription>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle>Category Mapping</CardTitle>
+            <CardDescription>
+              Map WordPress categories to Supabase categories for automatic sync
+            </CardDescription>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAutoSuggest}
+            disabled={mappings.length === 0}
+          >
+            <Wand2 className="mr-2 h-4 w-4" />
+            Auto-Match
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
@@ -193,7 +279,14 @@ export const WordPressCategoryMapper = () => {
               <div key={mapping.wpSlug} className="flex items-end gap-4 border-b pb-4">
                 <div className="flex-1 space-y-2">
                   <Label>WordPress Category</Label>
-                  <div className="text-sm font-medium">{mapping.wpName}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-medium">{mapping.wpName}</div>
+                    {mapping.autoSuggested && (
+                      <Badge variant="secondary" className="text-xs">
+                        Auto-matched
+                      </Badge>
+                    )}
+                  </div>
                   <div className="text-xs text-muted-foreground">Slug: {mapping.wpSlug}</div>
                 </div>
                 
@@ -201,14 +294,21 @@ export const WordPressCategoryMapper = () => {
                   <Label>Maps to Supabase Category</Label>
                   <Select
                     value={mapping.supabaseCategoryId || "none"}
-                    onValueChange={(value) => 
-                      handleMappingChange(mapping.wpSlug, value === "none" ? "" : value)
-                    }
+                    onValueChange={(value) => {
+                      const newValue = value === "none" ? "" : value;
+                      setMappings(prev => 
+                        prev.map(m => 
+                          m.wpSlug === mapping.wpSlug 
+                            ? { ...m, supabaseCategoryId: newValue, autoSuggested: false }
+                            : m
+                        )
+                      );
+                    }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="bg-background">
                       <SelectValue placeholder="Select category..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-popover z-50">
                       <SelectItem value="none">No mapping</SelectItem>
                       {supabaseCategories.map((cat) => (
                         <SelectItem key={cat.id} value={cat.id}>
