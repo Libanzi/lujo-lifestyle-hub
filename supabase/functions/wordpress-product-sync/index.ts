@@ -12,6 +12,7 @@ const WordPressSyncSchema = z.object({
   wordpressUrl: z.string().url("Invalid WordPress URL"),
   syncMode: z.enum(['full', 'incremental']).default('incremental'),
   categoryMapping: z.record(z.string()).optional(),
+  syncCategories: z.boolean().default(true),
 });
 
 interface WordPressProduct {
@@ -100,7 +101,78 @@ serve(async (req) => {
       );
     }
 
-    const { wordpressUrl, syncMode, categoryMapping } = validation.data;
+    const { wordpressUrl, syncMode, categoryMapping, syncCategories } = validation.data;
+
+    // Initialize Supabase admin client for database operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const syncResults = {
+      created: 0,
+      updated: 0,
+      skipped: 0,
+      categoriesCreated: 0,
+      categoriesUpdated: 0,
+      errors: [] as string[],
+    };
+
+    // Sync categories first if enabled
+    if (syncCategories) {
+      try {
+        const categoriesResponse = await fetch(
+          `${wordpressUrl}/wp-json/wp/v2/lujo_product_category?per_page=100`
+        );
+
+        if (categoriesResponse.ok) {
+          const wpCategories = await categoriesResponse.json();
+          
+          for (const wpCategory of wpCategories) {
+            try {
+              const { data: existingCategory } = await supabaseAdmin
+                .from('categories')
+                .select('id, slug')
+                .eq('slug', wpCategory.slug)
+                .single();
+
+              const categoryData = {
+                name: wpCategory.name,
+                slug: wpCategory.slug,
+                description: wpCategory.description || null,
+              };
+
+              if (existingCategory) {
+                const { error } = await supabaseAdmin
+                  .from('categories')
+                  .update(categoryData)
+                  .eq('id', existingCategory.id);
+
+                if (error) {
+                  syncResults.errors.push(`Failed to update category ${wpCategory.slug}: ${error.message}`);
+                } else {
+                  syncResults.categoriesUpdated++;
+                }
+              } else {
+                const { error } = await supabaseAdmin
+                  .from('categories')
+                  .insert(categoryData);
+
+                if (error) {
+                  syncResults.errors.push(`Failed to create category ${wpCategory.slug}: ${error.message}`);
+                } else {
+                  syncResults.categoriesCreated++;
+                }
+              }
+            } catch (error: any) {
+              syncResults.errors.push(`Error processing category ${wpCategory.slug}: ${error.message}`);
+            }
+          }
+        }
+      } catch (error: any) {
+        syncResults.errors.push(`Failed to fetch WordPress categories: ${error.message}`);
+      }
+    }
 
     // Fetch WordPress products
     const wpResponse = await fetch(
@@ -130,19 +202,6 @@ serve(async (req) => {
       active: activeProducts.length 
     });
 
-    // Initialize Supabase admin client for database operations
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    const syncResults = {
-      created: 0,
-      updated: 0,
-      skipped: 0,
-      errors: [] as string[],
-    };
-
     // Sync each product
     for (const wpProduct of activeProducts) {
       try {
@@ -165,7 +224,24 @@ serve(async (req) => {
           badge: wpProduct.product_meta.badge || null,
           image_url: wpProduct._embedded?.["wp:featuredmedia"]?.[0]?.source_url || null,
           is_active: true,
+          category_id: null, // Will be set if category mapping exists
         };
+
+        // Map WordPress category to Supabase category if provided
+        if (wpProduct._embedded?.["wp:term"]?.[0]?.[0]?.slug) {
+          const wpCategorySlug = wpProduct._embedded["wp:term"][0][0].slug;
+          
+          // Try to find matching category in Supabase
+          const { data: category } = await supabaseAdmin
+            .from('categories')
+            .select('id')
+            .eq('slug', wpCategorySlug)
+            .single();
+          
+          if (category) {
+            productData.category_id = category.id;
+          }
+        }
 
         if (existing) {
           // Update existing product
@@ -208,7 +284,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         results: syncResults,
-        message: `Sync completed: ${syncResults.created} created, ${syncResults.updated} updated, ${syncResults.skipped} skipped`
+        message: `Sync completed: ${syncResults.created} products created, ${syncResults.updated} updated, ${syncResults.skipped} skipped. Categories: ${syncResults.categoriesCreated} created, ${syncResults.categoriesUpdated} updated`
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
