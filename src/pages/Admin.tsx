@@ -5,7 +5,7 @@ import { ReorderSuggestions } from "@/components/ReorderSuggestions";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Package, Layers, ShoppingBag, Percent, BarChart3, Activity, TrendingUp, Settings } from "lucide-react";
+import { Package, Layers, ShoppingBag, Percent, BarChart3, Activity, TrendingUp, Settings, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Admin = () => {
@@ -148,6 +148,18 @@ const Admin = () => {
               <CardContent>
                 <p className="text-muted-foreground">
                   Configure alert thresholds and notification channels
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/wp/admin")}>
+              <CardHeader>
+                <Globe className="h-12 w-12 text-primary mb-2" />
+                <CardTitle>WordPress Admin</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Manage WordPress content and sync products
                 </p>
               </CardContent>
             </Card>

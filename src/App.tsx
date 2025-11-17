@@ -40,6 +40,7 @@ import AdminMonitoring from "./pages/AdminMonitoring";
 import AdminSettings from "./pages/AdminSettings";
 import WordPressPage from "./pages/WordPressPage";
 import WordPressProducts from "./pages/WordPressProducts";
+import WordPressAdmin from "./pages/WordPressAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -88,6 +89,7 @@ const App = () => (
           <Route path="/compare" element={<Compare />} />
           <Route path="/wp/page/:slug" element={<WordPressPage />} />
           <Route path="/wp/products" element={<WordPressProducts />} />
+          <Route path="/wp/admin" element={<WordPressAdmin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
