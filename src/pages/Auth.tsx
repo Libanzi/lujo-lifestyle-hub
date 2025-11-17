@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { WordPressAuthButton } from "@/components/WordPressAuthButton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -16,6 +17,31 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [passwordStrength, setPasswordStrength] = useState<string>("");
+  const [rateLimitWarning, setRateLimitWarning] = useState(false);
+
+  // Check password strength
+  const checkPasswordStrength = (pwd: string) => {
+    if (pwd.length === 0) {
+      setPasswordStrength("");
+      return;
+    }
+    if (pwd.length < 8) {
+      setPasswordStrength("weak");
+      return;
+    }
+    
+    const hasUpperCase = /[A-Z]/.test(pwd);
+    const hasLowerCase = /[a-z]/.test(pwd);
+    const hasNumbers = /\d/.test(pwd);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(pwd);
+    
+    const strength = [hasUpperCase, hasLowerCase, hasNumbers, hasSpecialChar].filter(Boolean).length;
+    
+    if (strength <= 2) setPasswordStrength("weak");
+    else if (strength === 3) setPasswordStrength("medium");
+    else setPasswordStrength("strong");
+  };
 
   useEffect(() => {
     // Check if user is already logged in
@@ -36,7 +62,30 @@ export default function Auth() {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Client-side password validation for signup
+    if (!isLogin) {
+      if (password.length < 8) {
+        toast({
+          title: "Password too short",
+          description: "Password must be at least 8 characters long.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (passwordStrength === "weak") {
+        toast({
+          title: "Weak password",
+          description: "Please use a stronger password with uppercase, lowercase, numbers, and special characters.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     setLoading(true);
+    setRateLimitWarning(false);
 
     try {
       if (isLogin) {
@@ -45,7 +94,14 @@ export default function Auth() {
           password,
         });
 
-        if (error) throw error;
+        if (error) {
+          // Check for rate limiting errors
+          if (error.message.includes("rate limit") || error.message.includes("too many")) {
+            setRateLimitWarning(true);
+            throw new Error("Too many login attempts. Please wait a few minutes before trying again.");
+          }
+          throw error;
+        }
         
         toast({
           title: "Welcome back!",
@@ -63,7 +119,17 @@ export default function Auth() {
           },
         });
 
-        if (error) throw error;
+        if (error) {
+          // Check for rate limiting or weak password errors
+          if (error.message.includes("rate limit") || error.message.includes("too many")) {
+            setRateLimitWarning(true);
+            throw new Error("Too many signup attempts. Please wait a few minutes before trying again.");
+          }
+          if (error.message.includes("password") && error.message.includes("breach")) {
+            throw new Error("This password has been found in a data breach. Please choose a different password.");
+          }
+          throw error;
+        }
 
         toast({
           title: "Account created!",
@@ -96,6 +162,15 @@ export default function Auth() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {rateLimitWarning && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Too many authentication attempts. Please wait a few minutes before trying again.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <form onSubmit={handleAuth} className="space-y-4">
             {!isLogin && (
               <div className="space-y-2">
@@ -124,16 +199,28 @@ export default function Auth() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Password {!isLogin && "(min. 8 characters)"}</Label>
               <Input
                 id="password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (!isLogin) checkPasswordStrength(e.target.value);
+                }}
                 required
-                minLength={6}
+                minLength={8}
               />
+              {!isLogin && password && (
+                <p className={`text-xs mt-1 ${
+                  passwordStrength === "weak" ? "text-destructive" :
+                  passwordStrength === "medium" ? "text-yellow-600" :
+                  "text-green-600"
+                }`}>
+                  Password strength: {passwordStrength || "checking..."}
+                </p>
+              )}
             </div>
 
             <Button
