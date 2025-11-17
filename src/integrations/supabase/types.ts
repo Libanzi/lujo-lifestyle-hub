@@ -626,6 +626,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_discount_uses: {
+        Args: { discount_code: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
