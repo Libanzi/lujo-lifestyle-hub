@@ -45,6 +45,68 @@ export class FunctionLogger {
       response_status: data.response_status || 500,
       ...data,
     });
+
+    // Check if we need to send an alert for this error
+    await this.checkAndSendAlert(errorMessage, data);
+  }
+
+  private async checkAndSendAlert(errorMessage: string, data: Partial<LogEntry>) {
+    try {
+      // Check error rate for this function in the last hour
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      
+      const { data: recentLogs, error } = await this.supabase
+        .from('function_logs')
+        .select('status')
+        .eq('function_name', this.functionName)
+        .gte('created_at', oneHourAgo);
+
+      if (error) {
+        console.error('Error checking alert conditions:', error);
+        return;
+      }
+
+      const totalCalls = recentLogs?.length || 0;
+      const errorCalls = recentLogs?.filter(log => log.status === 'error').length || 0;
+      
+      // If we have at least 10 calls and error rate > 50%, send alert
+      if (totalCalls >= 10 && (errorCalls / totalCalls) > 0.5) {
+        const errorRate = Math.round((errorCalls / totalCalls) * 100);
+        await this.sendAlert('high_error_rate', {
+          error_rate: errorRate,
+          total_calls: totalCalls,
+          error_calls: errorCalls,
+          recent_error: errorMessage,
+        });
+      }
+
+      // For critical functions, always alert on any error
+      const criticalFunctions = ['process-stripe-payment', 'process-payfast-payment', 'wordpress-auth-sync'];
+      if (criticalFunctions.includes(this.functionName)) {
+        await this.sendAlert('critical_function_failure', {
+          error_message: errorMessage,
+          metadata: data.metadata,
+        });
+      }
+    } catch (alertError) {
+      console.error('Error in alert checking:', alertError);
+    }
+  }
+
+  private async sendAlert(alertType: string, details: Record<string, any>) {
+    try {
+      await this.supabase.functions.invoke('send-admin-alert', {
+        body: {
+          alert_type: alertType,
+          function_name: this.functionName,
+          error_rate: details.error_rate,
+          error_message: details.error_message,
+          details,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to send alert:', error);
+    }
   }
 
   private async log(entry: Partial<LogEntry>) {
