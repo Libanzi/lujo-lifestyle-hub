@@ -201,19 +201,16 @@ export default function Checkout() {
 
       if (itemsError) throw itemsError;
 
-      // Increment discount uses if applied
+      // Increment discount uses atomically if applied
       if (appliedDiscount?.code) {
-        const { data: discountData } = await supabase
-          .from('discount_codes')
-          .select('uses_count')
-          .eq('code', appliedDiscount.code)
-          .single();
+        // Use PostgreSQL's atomic increment to prevent race conditions
+        const { error: discountError } = await supabase.rpc('increment_discount_uses', {
+          discount_code: appliedDiscount.code
+        });
         
-        if (discountData) {
-          await supabase
-            .from('discount_codes')
-            .update({ uses_count: discountData.uses_count + 1 })
-            .eq('code', appliedDiscount.code);
+        if (discountError) {
+          console.error('Error incrementing discount uses:', discountError);
+          // Don't fail the order if discount increment fails, just log it
         }
       }
 
