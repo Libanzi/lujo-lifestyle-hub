@@ -1,16 +1,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface ProcessLoyaltyRequest {
-  userId: string;
-  orderId: string;
-  orderAmount: number;
-}
+// Input validation schema
+const ProcessLoyaltySchema = z.object({
+  userId: z.string().uuid({ message: "userId must be a valid UUID" }),
+  orderId: z.string().uuid({ message: "orderId must be a valid UUID" }),
+  orderAmount: z.number()
+    .positive({ message: "orderAmount must be positive" })
+    .finite({ message: "orderAmount must be a finite number" })
+    .max(1000000, { message: "orderAmount exceeds maximum allowed" }),
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -22,7 +27,23 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { userId, orderId, orderAmount }: ProcessLoyaltyRequest = await req.json();
+    // Validate input
+    const body = await req.json();
+    const validationResult = ProcessLoyaltySchema.safeParse(body);
+    
+    if (!validationResult.success) {
+      console.warn("Invalid loyalty points input:", validationResult.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid request format",
+          details: validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { userId, orderId, orderAmount } = validationResult.data;
+    console.log(`Processing loyalty points for user ${userId}, order ${orderId}, amount R${orderAmount}`);
 
     // Get or create user's loyalty points record
     let { data: loyaltyPoints, error: fetchError } = await supabase

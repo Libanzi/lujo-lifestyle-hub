@@ -1,16 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface EmailRequest {
-  orderId: string;
-  type: 'confirmation' | 'status_update' | 'shipped';
-}
+// Input validation schema
+const EmailRequestSchema = z.object({
+  orderId: z.string().uuid({ message: "orderId must be a valid UUID" }),
+  type: z.enum(['confirmation', 'status_update', 'shipped'], {
+    errorMap: () => ({ message: "type must be 'confirmation', 'status_update', or 'shipped'" })
+  }),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -30,7 +34,23 @@ serve(async (req) => {
       }
     );
 
-    const { orderId, type }: EmailRequest = await req.json();
+    // Validate input
+    const body = await req.json();
+    const validationResult = EmailRequestSchema.safeParse(body);
+    
+    if (!validationResult.success) {
+      console.warn("Invalid email request input:", validationResult.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid request format",
+          details: validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { orderId, type } = validationResult.data;
+    console.log(`Sending ${type} email for order ${orderId}`);
 
     // Get order details
     const { data: order, error: orderError } = await supabaseClient
