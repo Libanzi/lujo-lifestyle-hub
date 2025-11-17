@@ -10,10 +10,12 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useWordPressPosts } from "@/hooks/useWordPressPosts";
 import { useWordPressProducts } from "@/hooks/useWordPressProducts";
-import { Loader2, RefreshCw, ExternalLink, Database, FileText, Package, Clock } from "lucide-react";
+import { Loader2, RefreshCw, ExternalLink, Database, FileText, Package, Settings as SettingsIcon, History } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { WordPressSettings } from "@/components/WordPressSettings";
+import { WordPressSyncHistory } from "@/components/WordPressSyncHistory";
 
 const WordPressAdmin = () => {
   const { toast } = useToast();
@@ -72,11 +74,19 @@ const WordPressAdmin = () => {
             </p>
           </div>
 
-          <Tabs defaultValue="sync" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+          <Tabs defaultValue="settings" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="settings">
+                <SettingsIcon className="mr-2 h-4 w-4" />
+                Settings
+              </TabsTrigger>
+              <TabsTrigger value="history">
+                <History className="mr-2 h-4 w-4" />
+                History
+              </TabsTrigger>
               <TabsTrigger value="sync">
                 <Database className="mr-2 h-4 w-4" />
-                Product Sync
+                Manual Sync
               </TabsTrigger>
               <TabsTrigger value="posts">
                 <FileText className="mr-2 h-4 w-4" />
@@ -88,21 +98,23 @@ const WordPressAdmin = () => {
               </TabsTrigger>
             </TabsList>
 
+            <TabsContent value="settings">
+              <WordPressSettings />
+            </TabsContent>
+
+            <TabsContent value="history">
+              <WordPressSyncHistory />
+            </TabsContent>
+
             <TabsContent value="sync" className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>WordPress Product & Category Sync</CardTitle>
+                  <CardTitle>Manual Product Sync</CardTitle>
                   <CardDescription>
-                    Import products and categories from WordPress into your Supabase database. Automatic sync runs daily at 3:00 AM.
+                    Trigger an immediate product and category sync from WordPress. Configure automatic sync in Settings.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <Alert>
-                    <Clock className="h-4 w-4" />
-                    <AlertDescription>
-                      Automated synchronization is scheduled to run daily at 3:00 AM to keep your products and categories in sync with WordPress.
-                    </AlertDescription>
-                  </Alert>
 
                   <div className="space-y-2">
                     <Label htmlFor="wp-url">WordPress Site URL</Label>

@@ -47,72 +47,117 @@ serve(async (req) => {
   }
 
   try {
-    // Check authentication - must be admin
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      await logger.logError(new Error('Missing authorization'), { 
-        metadata: { context: 'auth_check' }
-      });
-      return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      );
-    }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    // Verify user is admin
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      await logger.logError(new Error('Invalid user'), { 
-        metadata: { context: 'user_verification' }
-      });
-      return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      );
-    }
-
-    const { data: roleData } = await supabase.rpc('has_role', {
-      _user_id: user.id,
-      _role: 'admin'
-    });
-
-    if (!roleData) {
-      await logger.logError(new Error('Not an admin'), { 
-        user_id: user.id,
-        metadata: { context: 'admin_check' }
-      });
-      return new Response(
-        JSON.stringify({ success: false, error: 'Admin access required' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
-      );
-    }
-
-    const body = await req.json();
-    const validation = WordPressSyncSchema.safeParse(body);
-
-    if (!validation.success) {
-      await logger.logError(new Error('Validation failed'), { 
-        metadata: { errors: validation.error.errors }
-      });
-      return new Response(
-        JSON.stringify({ success: false, error: validation.error.errors[0]?.message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
-    }
-
-    const { wordpressUrl, syncMode, categoryMapping, syncCategories } = validation.data;
-
-    // Initialize Supabase admin client for database operations
+    // Initialize Supabase admin client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    // Check if this is a cron job (no auth header) or manual trigger
+    const authHeader = req.headers.get('Authorization');
+    const isCronJob = !authHeader || authHeader.includes(Deno.env.get('SUPABASE_ANON_KEY') ?? '');
+    
+    let userId: string | null = null;
+    let triggeredBy: 'cron' | 'manual' | 'admin' = isCronJob ? 'cron' : 'manual';
+
+    // If not a cron job, verify admin access
+    if (!isCronJob && authHeader) {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        { global: { headers: { Authorization: authHeader } } }
+      );
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        await logger.logError(new Error('Invalid user'), { 
+          metadata: { context: 'user_verification' }
+        });
+        return new Response(
+          JSON.stringify({ success: false, error: 'Unauthorized' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        );
+      }
+
+      const { data: roleData } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin'
+      });
+
+      if (!roleData) {
+        await logger.logError(new Error('Not an admin'), { 
+          user_id: user.id,
+          metadata: { context: 'admin_check' }
+        });
+        return new Response(
+          JSON.stringify({ success: false, error: 'Admin access required' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+        );
+      }
+
+      userId = user.id;
+      triggeredBy = 'admin';
+    }
+
+    // Get sync configuration
+    let wordpressUrl: string = '';
+    let syncMode: 'full' | 'incremental' = 'incremental';
+    let syncCategories: boolean = true;
+
+    // Try to parse request body
+    let hasRequestBody = false;
+    try {
+      const body = await req.json();
+      if (body && body.wordpressUrl) {
+        const validation = WordPressSyncSchema.safeParse(body);
+        if (validation.success) {
+          wordpressUrl = validation.data.wordpressUrl;
+          syncMode = validation.data.syncMode;
+          syncCategories = validation.data.syncCategories;
+          hasRequestBody = true;
+        }
+      }
+    } catch {
+      // No body or invalid JSON, will use settings
+    }
+
+    // If no body, fetch from settings table (for cron jobs)
+    if (!hasRequestBody) {
+      const { data: settings, error: settingsError } = await supabaseAdmin
+        .from('wordpress_settings')
+        .select('*')
+        .single();
+
+      if (settingsError || !settings || !settings.auto_sync_enabled) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'No WordPress settings configured or auto-sync disabled' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
+
+      wordpressUrl = settings.wordpress_url;
+      syncMode = settings.sync_mode as 'full' | 'incremental';
+      syncCategories = settings.sync_categories;
+    }
+
+    // Create sync history entry
+    const { data: syncHistoryEntry, error: historyError } = await supabaseAdmin
+      .from('wordpress_sync_history')
+      .insert({
+        wordpress_url: wordpressUrl,
+        sync_mode: syncMode,
+        triggered_by: triggeredBy,
+        user_id: userId,
+        status: 'running'
+      })
+      .select()
+      .single();
+
+    if (historyError || !syncHistoryEntry) {
+      console.error('Failed to create sync history:', historyError);
+    }
+
+    const syncHistoryId = syncHistoryEntry?.id;
 
     const syncResults = {
       created: 0,
@@ -281,6 +326,23 @@ serve(async (req) => {
       }
     }
 
+    // Update sync history with results
+    if (syncHistoryId) {
+      await supabaseAdmin
+        .from('wordpress_sync_history')
+        .update({
+          sync_completed_at: new Date().toISOString(),
+          status: syncResults.errors.length > 0 ? 'partial' : 'success',
+          products_created: syncResults.created,
+          products_updated: syncResults.updated,
+          products_skipped: syncResults.skipped,
+          categories_created: syncResults.categoriesCreated,
+          categories_updated: syncResults.categoriesUpdated,
+          errors: syncResults.errors
+        })
+        .eq('id', syncHistoryId);
+    }
+
     await logger.logSuccess({
       metadata: syncResults
     });
@@ -298,6 +360,37 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
+    // Update sync history as failed if we have the ID
+    try {
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      
+      // Try to get the sync history ID from earlier in the flow
+      // This is a best-effort attempt to mark the sync as failed
+      const { data: lastSync } = await supabaseAdmin
+        .from('wordpress_sync_history')
+        .select('id')
+        .eq('status', 'running')
+        .order('sync_started_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (lastSync) {
+        await supabaseAdmin
+          .from('wordpress_sync_history')
+          .update({
+            sync_completed_at: new Date().toISOString(),
+            status: 'failed',
+            errors: [error.message]
+          })
+          .eq('id', lastSync.id);
+      }
+    } catch {
+      // Ignore errors in error handler
+    }
+
     await logger.logError(error, { 
       metadata: { context: 'main_handler' }
     });
