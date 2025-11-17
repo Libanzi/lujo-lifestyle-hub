@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { WordPressAuthButton } from "@/components/WordPressAuthButton";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -144,6 +145,19 @@ export default function Auth() {
               {isLogin ? "Sign In" : "Create Account"}
             </Button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          <WordPressAuthButton />
 
           <div className="mt-6 text-center">
             <button
