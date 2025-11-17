@@ -6,6 +6,7 @@ import { WordPressContent } from "@/components/WordPressContent";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { sanitizeHTML } from "@/lib/sanitize";
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -46,7 +47,7 @@ const BlogPost = () => {
               <header className="mb-8">
                 <h1 
                   className="text-4xl font-bold mb-4"
-                  dangerouslySetInnerHTML={{ __html: post.title.rendered }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHTML(post.title.rendered) }}
                 />
                 <p className="text-muted-foreground">
                   {new Date(post.date).toLocaleDateString("en-US", {

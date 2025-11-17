@@ -1,18 +1,30 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface PayFastPaymentRequest {
-  orderId: string;
-  amount: number;
-  returnUrl: string;
-  cancelUrl: string;
-  notifyUrl: string;
-}
+// Zod validation schema
+const PayFastPaymentSchema = z.object({
+  orderId: z.string()
+    .uuid("Invalid order ID format"),
+  amount: z.number()
+    .positive("Amount must be positive")
+    .finite("Amount must be a valid number")
+    .max(1000000, "Amount too large"),
+  returnUrl: z.string()
+    .url("Invalid return URL")
+    .max(500, "Return URL too long"),
+  cancelUrl: z.string()
+    .url("Invalid cancel URL")
+    .max(500, "Cancel URL too long"),
+  notifyUrl: z.string()
+    .url("Invalid notify URL")
+    .max(500, "Notify URL too long"),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -30,7 +42,24 @@ serve(async (req) => {
       }
     );
 
-    const { orderId, amount, returnUrl, cancelUrl, notifyUrl }: PayFastPaymentRequest = await req.json();
+    const body = await req.json();
+    
+    // Validate input with Zod
+    const validation = PayFastPaymentSchema.safeParse(body);
+    if (!validation.success) {
+      console.error('Validation error:', validation.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          error: validation.error.errors[0]?.message || 'Invalid input' 
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const { orderId, amount, returnUrl, cancelUrl, notifyUrl } = validation.data;
 
     // Get order details
     const { data: order, error: orderError } = await supabaseClient
