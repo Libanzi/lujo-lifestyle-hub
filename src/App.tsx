@@ -36,6 +36,7 @@ import AdminDiscounts from "./pages/AdminDiscounts";
 import Analytics from "./pages/Analytics";
 import Loyalty from "./pages/Loyalty";
 import Compare from "./pages/Compare";
+import AdminMonitoring from "./pages/AdminMonitoring";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,7 @@ const App = () => (
           <Route path="/admin/categories" element={<AdminCategories />} />
           <Route path="/admin/orders" element={<AdminOrders />} />
           <Route path="/admin/discounts" element={<AdminDiscounts />} />
+          <Route path="/admin/monitoring" element={<AdminMonitoring />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/loyalty" element={<Loyalty />} />
           <Route path="/compare" element={<Compare />} />

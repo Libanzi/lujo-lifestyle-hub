@@ -5,7 +5,7 @@ import { ReorderSuggestions } from "@/components/ReorderSuggestions";
 import { useAdmin } from "@/hooks/useAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Package, Layers, ShoppingBag, Percent, BarChart3 } from "lucide-react";
+import { Package, Layers, ShoppingBag, Percent, BarChart3, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Admin = () => {
@@ -112,6 +112,18 @@ const Admin = () => {
               <CardContent>
                 <p className="text-muted-foreground">
                   View sales reports and business insights
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/admin/monitoring")}>
+              <CardHeader>
+                <Activity className="h-12 w-12 text-primary mb-2" />
+                <CardTitle>Function Monitoring</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Real-time monitoring of edge functions and security logs
                 </p>
               </CardContent>
             </Card>

@@ -121,6 +121,75 @@ export type Database = {
         }
         Relationships: []
       }
+      email_rate_limits: {
+        Row: {
+          created_at: string | null
+          email_type: string
+          id: string
+          recipient_email: string
+          sent_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_type: string
+          id?: string
+          recipient_email: string
+          sent_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email_type?: string
+          id?: string
+          recipient_email?: string
+          sent_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      function_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          execution_time_ms: number | null
+          function_name: string
+          id: string
+          metadata: Json | null
+          request_method: string | null
+          request_path: string | null
+          response_status: number | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          execution_time_ms?: number | null
+          function_name: string
+          id?: string
+          metadata?: Json | null
+          request_method?: string | null
+          request_path?: string | null
+          response_status?: number | null
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          execution_time_ms?: number | null
+          function_name?: string
+          id?: string
+          metadata?: Json | null
+          request_method?: string | null
+          request_path?: string | null
+          response_status?: number | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       loyalty_points: {
         Row: {
           created_at: string | null
@@ -619,6 +688,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_email_rate_limit: {
+        Args: {
+          p_email_type: string
+          p_max_per_day?: number
+          p_max_per_hour?: number
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      cleanup_old_email_rate_limits: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -628,6 +707,14 @@ export type Database = {
       }
       increment_discount_uses: {
         Args: { discount_code: string }
+        Returns: undefined
+      }
+      record_email_send: {
+        Args: {
+          p_email_type: string
+          p_recipient_email: string
+          p_user_id: string
+        }
         Returns: undefined
       }
     }

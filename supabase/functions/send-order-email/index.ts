@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { FunctionLogger, checkAndRecordEmailLimit } from "../_shared/function-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,6 +18,9 @@ const EmailRequestSchema = z.object({
 });
 
 serve(async (req) => {
+  const logger = new FunctionLogger('send-order-email');
+  let user: any = null;
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -34,12 +38,22 @@ serve(async (req) => {
       }
     );
 
+    // Get user for logging
+    const { data: { user: authUser } } = await supabaseClient.auth.getUser();
+    user = authUser;
+
     // Validate input
     const body = await req.json();
     const validationResult = EmailRequestSchema.safeParse(body);
     
     if (!validationResult.success) {
       console.warn("Invalid email request input:", validationResult.error.errors);
+      await logger.logError('Validation failed', {
+        user_id: user?.id,
+        request_method: req.method,
+        response_status: 400,
+        metadata: { validation_errors: validationResult.error.errors }
+      });
       return new Response(
         JSON.stringify({ 
           error: "Invalid request format",
@@ -76,6 +90,27 @@ serve(async (req) => {
     const email = order.profiles.email;
     const customerName = order.profiles.full_name || 'Customer';
 
+    // Check email rate limit
+    const rateLimitCheck = await checkAndRecordEmailLimit(
+      user?.id,
+      `order_${type}`,
+      email
+    );
+
+    if (!rateLimitCheck.allowed) {
+      console.warn(`Email rate limit exceeded for user ${user?.id}`);
+      await logger.logError(rateLimitCheck.reason || 'Rate limit exceeded', {
+        user_id: user?.id,
+        request_method: req.method,
+        response_status: 429,
+        metadata: { order_id: orderId, email_type: type, recipient: email }
+      });
+      return new Response(
+        JSON.stringify({ error: rateLimitCheck.reason }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     let subject = '';
     let htmlContent = '';
 
@@ -103,6 +138,13 @@ serve(async (req) => {
 
     console.log('Email sent successfully:', emailResponse);
 
+    await logger.logSuccess({
+      user_id: user?.id,
+      request_method: req.method,
+      response_status: 200,
+      metadata: { order_id: orderId, email_type: type, recipient: email }
+    });
+
     return new Response(
       JSON.stringify({ success: true, response: emailResponse }),
       {
@@ -111,6 +153,14 @@ serve(async (req) => {
     );
   } catch (error: any) {
     console.error('Error sending email:', error);
+    
+    await logger.logError(error, {
+      user_id: user?.id,
+      request_method: req.method,
+      response_status: 500,
+      metadata: { error_stack: error.stack }
+    });
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       {
