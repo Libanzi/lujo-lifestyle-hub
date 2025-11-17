@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { SecurityLogger, checkRateLimit } from "../_shared/security-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,18 +31,55 @@ interface WordPressUser {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
+  const logger = new SecurityLogger('wordpress-auth-sync', req);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    logger.logRequest(req.method);
+
+    // Rate limiting: 10 requests per 5 minutes per IP
+    const clientIp = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    if (!checkRateLimit(`wp-auth:${clientIp}`, 10, 5 * 60 * 1000)) {
+      logger.logSuspiciousActivity('rate_limit_exceeded', {
+        identifier: clientIp,
+        limit: '10 requests per 5 minutes',
+      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Too many requests. Please try again later.',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 429,
+        }
+      );
+    }
+
     const body = await req.json();
     
+    // Check for suspicious patterns
+    const suspiciousCheck = logger.detectSuspiciousPatterns(JSON.stringify(body));
+    if (suspiciousCheck.isSuspicious) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Invalid request',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
     // Validate input with Zod
     const validation = WordPressAuthSchema.safeParse(body);
     if (!validation.success) {
-      console.error('Validation error:', validation.error.errors);
+      logger.logValidationFailure(validation.error.errors, body);
       return new Response(
         JSON.stringify({
           success: false,
@@ -54,6 +92,8 @@ serve(async (req) => {
       );
     }
 
+    logger.logValidationSuccess(validation.data);
+
     const { wordpressToken, wordpressUrl } = validation.data;
 
     // Verify WordPress JWT token and get user info
@@ -64,6 +104,7 @@ serve(async (req) => {
     });
 
     if (!wpResponse.ok) {
+      logger.logAuthFailure('invalid_wordpress_token');
       throw new Error('Invalid WordPress token');
     }
 
@@ -71,6 +112,7 @@ serve(async (req) => {
 
     // Validate WordPress user response
     if (!wpUser.email || !wpUser.id) {
+      logger.logAuthFailure('invalid_wordpress_user_data');
       throw new Error('Invalid WordPress user data');
     }
 
@@ -90,7 +132,7 @@ serve(async (req) => {
     const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     
     if (listError) {
-      console.error('Error listing users:', listError);
+      logger.logError(listError);
       throw listError;
     }
 
@@ -99,11 +141,10 @@ serve(async (req) => {
     let supabaseUser;
     
     if (existingUser) {
-      // User exists, generate token
       supabaseUser = existingUser;
+      logger.logAuthSuccess(supabaseUser.id);
       console.log('Existing Supabase user found:', supabaseUser.id);
     } else {
-      // Create new user in Supabase
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: wpUser.email,
         email_confirm: true,
@@ -115,11 +156,12 @@ serve(async (req) => {
       });
 
       if (createError) {
-        console.error('Error creating user:', createError);
+        logger.logError(createError);
         throw createError;
       }
 
       supabaseUser = newUser.user;
+      logger.logAuthSuccess(supabaseUser.id);
       console.log('New Supabase user created:', supabaseUser.id);
     }
 
@@ -130,7 +172,7 @@ serve(async (req) => {
     });
 
     if (sessionError) {
-      console.error('Error generating session:', sessionError);
+      logger.logError(sessionError);
       throw sessionError;
     }
 
@@ -151,6 +193,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
+    logger.logError(error instanceof Error ? error : new Error(String(error)));
     console.error('Error in wordpress-auth-sync:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(

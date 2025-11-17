@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, AlertCircle } from "lucide-react";
 import { WordPressAuthButton } from "@/components/WordPressAuthButton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { HCaptchaComponent, HCaptchaHandle } from "@/components/HCaptcha";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -19,6 +20,8 @@ export default function Auth() {
   const [fullName, setFullName] = useState("");
   const [passwordStrength, setPasswordStrength] = useState<string>("");
   const [rateLimitWarning, setRateLimitWarning] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string>("");
+  const captchaRef = useRef<HCaptchaHandle>(null);
 
   // Check password strength
   const checkPasswordStrength = (pwd: string) => {
@@ -84,10 +87,25 @@ export default function Auth() {
       }
     }
     
+    // Trigger captcha verification
+    if (!captchaToken) {
+      captchaRef.current?.execute();
+      return;
+    }
+    
     setLoading(true);
     setRateLimitWarning(false);
 
     try {
+      // Verify captcha token
+      const { data: captchaResult, error: captchaError } = await supabase.functions.invoke('verify-captcha', {
+        body: { token: captchaToken },
+      });
+
+      if (captchaError || !captchaResult?.success) {
+        throw new Error('Captcha verification failed. Please try again.');
+      }
+
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -142,9 +160,34 @@ export default function Auth() {
         description: error.message,
         variant: "destructive",
       });
+      // Reset captcha on error
+      setCaptchaToken("");
+      captchaRef.current?.resetCaptcha();
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCaptchaVerify = (token: string) => {
+    setCaptchaToken(token);
+    // Auto-submit form after captcha verification
+    const form = document.querySelector('form');
+    if (form) {
+      form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }
+  };
+
+  const handleCaptchaError = () => {
+    setCaptchaToken("");
+    toast({
+      title: "Captcha Error",
+      description: "Failed to load captcha. Please refresh the page.",
+      variant: "destructive",
+    });
+  };
+
+  const handleCaptchaExpire = () => {
+    setCaptchaToken("");
   };
 
   return (
@@ -222,6 +265,13 @@ export default function Auth() {
                 </p>
               )}
             </div>
+
+            <HCaptchaComponent
+              ref={captchaRef}
+              onVerify={handleCaptchaVerify}
+              onError={handleCaptchaError}
+              onExpire={handleCaptchaExpire}
+            />
 
             <Button
               type="submit"

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { SecurityLogger, checkRateLimit } from "../_shared/security-logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,11 +22,34 @@ const ValidateDiscountSchema = z.object({
 });
 
 serve(async (req) => {
+  const logger = new SecurityLogger('validate-discount', req);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    logger.logRequest(req.method);
+
+    // Rate limiting: 20 requests per minute per IP
+    const clientIp = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    if (!checkRateLimit(`discount:${clientIp}`, 20, 60 * 1000)) {
+      logger.logSuspiciousActivity('rate_limit_exceeded', {
+        identifier: clientIp,
+        limit: '20 requests per minute',
+      });
+      return new Response(
+        JSON.stringify({ 
+          valid: false, 
+          error: 'Too many requests. Please try again later.' 
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 429,
+        }
+      );
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -38,10 +62,25 @@ serve(async (req) => {
 
     const body = await req.json();
     
+    // Check for suspicious patterns
+    const suspiciousCheck = logger.detectSuspiciousPatterns(JSON.stringify(body));
+    if (suspiciousCheck.isSuspicious) {
+      return new Response(
+        JSON.stringify({ 
+          valid: false, 
+          error: 'Invalid request' 
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      );
+    }
+
     // Validate input with Zod
     const validation = ValidateDiscountSchema.safeParse(body);
     if (!validation.success) {
-      console.error('Validation error:', validation.error.errors);
+      logger.logValidationFailure(validation.error.errors, body);
       return new Response(
         JSON.stringify({ 
           valid: false, 
@@ -54,6 +93,8 @@ serve(async (req) => {
       );
     }
 
+    logger.logValidationSuccess(validation.data);
+
     const { code, subtotal } = validation.data;
 
     // Get discount code
@@ -65,6 +106,7 @@ serve(async (req) => {
       .single();
 
     if (discountError || !discount) {
+      logger.logAuthFailure('invalid_discount_code', code);
       return new Response(
         JSON.stringify({ 
           valid: false, 
@@ -78,6 +120,7 @@ serve(async (req) => {
 
     // Check if expired
     if (discount.expires_at && new Date(discount.expires_at) < new Date()) {
+      logger.logAuthFailure('expired_discount_code', code);
       return new Response(
         JSON.stringify({ 
           valid: false, 
@@ -91,6 +134,7 @@ serve(async (req) => {
 
     // Check max uses
     if (discount.max_uses && discount.uses_count >= discount.max_uses) {
+      logger.logAuthFailure('discount_max_uses_reached', code);
       return new Response(
         JSON.stringify({ 
           valid: false, 
@@ -104,6 +148,7 @@ serve(async (req) => {
 
     // Check minimum purchase amount
     if (discount.min_purchase_amount && subtotal < discount.min_purchase_amount) {
+      logger.logAuthFailure('discount_min_purchase_not_met', code);
       return new Response(
         JSON.stringify({ 
           valid: false, 
@@ -126,6 +171,7 @@ serve(async (req) => {
     // Ensure discount doesn't exceed subtotal
     discountAmount = Math.min(discountAmount, subtotal);
 
+    logger.logAuthSuccess(`discount_validated:${code}`);
     console.log('Discount validated:', code, 'Amount:', discountAmount);
 
     return new Response(
@@ -144,6 +190,7 @@ serve(async (req) => {
       }
     );
   } catch (error: any) {
+    logger.logError(error instanceof Error ? error : new Error(String(error)));
     console.error('Error validating discount:', error);
     return new Response(
       JSON.stringify({ 
