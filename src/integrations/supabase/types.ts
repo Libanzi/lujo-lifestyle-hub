@@ -722,6 +722,93 @@ export type Database = {
           },
         ]
       }
+      wordpress_settings: {
+        Row: {
+          auto_sync_enabled: boolean
+          created_at: string | null
+          id: string
+          sync_categories: boolean
+          sync_mode: string
+          sync_schedule: string
+          updated_at: string | null
+          wordpress_url: string
+        }
+        Insert: {
+          auto_sync_enabled?: boolean
+          created_at?: string | null
+          id?: string
+          sync_categories?: boolean
+          sync_mode?: string
+          sync_schedule?: string
+          updated_at?: string | null
+          wordpress_url: string
+        }
+        Update: {
+          auto_sync_enabled?: boolean
+          created_at?: string | null
+          id?: string
+          sync_categories?: boolean
+          sync_mode?: string
+          sync_schedule?: string
+          updated_at?: string | null
+          wordpress_url?: string
+        }
+        Relationships: []
+      }
+      wordpress_sync_history: {
+        Row: {
+          categories_created: number | null
+          categories_updated: number | null
+          created_at: string | null
+          errors: Json | null
+          id: string
+          products_created: number | null
+          products_skipped: number | null
+          products_updated: number | null
+          status: string
+          sync_completed_at: string | null
+          sync_mode: string
+          sync_started_at: string
+          triggered_by: string
+          user_id: string | null
+          wordpress_url: string
+        }
+        Insert: {
+          categories_created?: number | null
+          categories_updated?: number | null
+          created_at?: string | null
+          errors?: Json | null
+          id?: string
+          products_created?: number | null
+          products_skipped?: number | null
+          products_updated?: number | null
+          status?: string
+          sync_completed_at?: string | null
+          sync_mode: string
+          sync_started_at?: string
+          triggered_by?: string
+          user_id?: string | null
+          wordpress_url: string
+        }
+        Update: {
+          categories_created?: number | null
+          categories_updated?: number | null
+          created_at?: string | null
+          errors?: Json | null
+          id?: string
+          products_created?: number | null
+          products_skipped?: number | null
+          products_updated?: number | null
+          status?: string
+          sync_completed_at?: string | null
+          sync_mode?: string
+          sync_started_at?: string
+          triggered_by?: string
+          user_id?: string | null
+          wordpress_url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
