@@ -43,6 +43,16 @@ All colors MUST be HSL.
     --luxury-charcoal: 0 0% 15%;
     --luxury-deep-black: 0 0% 9%;
     
+    /* Color Palette 1-8 */
+    --color-1: 0 0% 9%;           /* Deep Black */
+    --color-2: 0 0% 20%;          /* Charcoal */
+    --color-3: 0 0% 45%;          /* Gray */
+    --color-4: 0 0% 70%;          /* Light Gray */
+    --color-5: 38 92% 50%;        /* Gold */
+    --color-6: 43 74% 66%;        /* Champagne */
+    --color-7: 0 0% 96%;          /* Off White */
+    --color-8: 0 0% 100%;         /* Pure White */
+    
     --gradient-luxury: linear-gradient(135deg, hsl(var(--luxury-deep-black)), hsl(var(--luxury-charcoal)));
     --gradient-gold: linear-gradient(135deg, hsl(var(--luxury-gold)), hsl(var(--luxury-champagne)));
     
