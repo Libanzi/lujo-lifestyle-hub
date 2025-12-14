@@ -5,12 +5,15 @@ import { FeaturedProducts } from "@/components/FeaturedProducts";
 import { Newsletter } from "@/components/Newsletter";
 import { Footer } from "@/components/Footer";
 import ColorPalettePreview from "@/components/ColorPalettePreview";
+import { useAdmin } from "@/hooks/useAdmin";
 
 const Index = () => {
+  const { isAdmin } = useAdmin();
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <ColorPalettePreview />
+      {isAdmin && <ColorPalettePreview />}
       <Hero />
       <CategoryShowcase />
       <FeaturedProducts />
