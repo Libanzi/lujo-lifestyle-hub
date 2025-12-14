@@ -672,6 +672,39 @@ export type Database = {
           },
         ]
       }
+      theme_settings: {
+        Row: {
+          color_label: string
+          color_name: string
+          created_at: string | null
+          hex_value: string
+          hsl_value: string
+          id: string
+          sort_order: number
+          updated_at: string | null
+        }
+        Insert: {
+          color_label: string
+          color_name: string
+          created_at?: string | null
+          hex_value: string
+          hsl_value: string
+          id?: string
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Update: {
+          color_label?: string
+          color_name?: string
+          created_at?: string | null
+          hex_value?: string
+          hsl_value?: string
+          id?: string
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
