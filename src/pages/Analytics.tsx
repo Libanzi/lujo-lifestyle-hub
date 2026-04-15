@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAdmin } from "@/hooks/useAdmin";
-import { useNavigate } from "react-router-dom";
+import { DollarSign, Package, ShoppingCart, TrendingUp, Users } from "lucide-react";
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { DollarSign, Package, ShoppingCart, TrendingUp, Users } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
