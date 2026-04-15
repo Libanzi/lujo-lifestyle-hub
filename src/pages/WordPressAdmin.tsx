@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,16 +63,8 @@ const WordPressAdmin = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navigation />
-      <main className="flex-1 py-16">
-        <div className="container px-4">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2">WordPress Management</h1>
-            <p className="text-muted-foreground">
-              Manage your WordPress content and sync products to the database
-            </p>
-          </div>
+    <AdminLayout title="WordPress Management" description="Manage your WordPress content and sync products">
+      <div>
 
           <Tabs defaultValue="settings" className="space-y-6">
             <TabsList className="grid w-full grid-cols-6">
@@ -336,10 +327,8 @@ const WordPressAdmin = () => {
               </Card>
             </TabsContent>
           </Tabs>
-        </div>
-      </main>
-      <Footer />
-    </div>
+      </div>
+    </AdminLayout>
   );
 };
 
