@@ -1,24 +1,12 @@
-import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
 import { OrderDetailsModal } from "@/components/OrderDetailsModal";
-import { useAdmin } from "@/hooks/useAdmin";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
-
-interface OrderItem {
-  id: string;
-  quantity: number;
-  price: number;
-  product: {
-    name: string;
-    image_url: string;
-  };
-}
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface Order {
   id: string;
@@ -30,200 +18,99 @@ interface Order {
   user_id: string;
   user_email?: string;
   user_name?: string;
+  order_items?: any[];
 }
 
 const AdminOrders = () => {
-  const { isAdmin, loading: adminLoading } = useAdmin();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (!adminLoading && isAdmin) {
-      loadOrders();
-    }
-  }, [adminLoading, isAdmin]);
+  useEffect(() => { loadOrders(); }, []);
 
   const loadOrders = async () => {
     setLoading(true);
-    const { data: ordersData, error } = await supabase
+    const { data, error } = await supabase
       .from("orders")
-      .select(`
-        *,
-        order_items (
-          *,
-          product:products (
-            name,
-            image_url
-          )
-        )
-      `)
+      .select(`*, order_items (*, product:products (name, image_url))`)
       .order("created_at", { ascending: false });
 
-    if (error) {
-      toast({ title: "Error loading orders", variant: "destructive" });
-      setLoading(false);
-      return;
-    }
+    if (error) { toast({ title: "Error loading orders", variant: "destructive" }); setLoading(false); return; }
 
-    // Fetch user profiles for each order
     const ordersWithProfiles = await Promise.all(
-      (ordersData || []).map(async (order) => {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("email, full_name")
-          .eq("id", order.user_id)
-          .maybeSingle();
-
-        return {
-          ...order,
-          user_email: profile?.email || "Unknown",
-          user_name: profile?.full_name || "Unknown",
-        };
+      (data || []).map(async (order) => {
+        const { data: profile } = await supabase.from("profiles").select("email, full_name").eq("id", order.user_id).maybeSingle();
+        return { ...order, user_email: profile?.email || "Unknown", user_name: profile?.full_name || "Unknown" };
       })
     );
-
     setOrders(ordersWithProfiles);
     setLoading(false);
   };
 
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: newStatus })
-      .eq("id", orderId);
-
-    if (error) {
-      toast({ title: "Error updating order", variant: "destructive" });
-    } else {
-      // Add status history entry
-      await supabase
-        .from("order_status_history")
-        .insert({
-          order_id: orderId,
-          status: newStatus,
-          notes: `Status updated to ${newStatus}`,
-        });
-
-      // Send email notification based on status
-      const emailType = newStatus === 'shipped' ? 'shipped' : 'status_update';
-      const { error: emailError } = await supabase.functions.invoke('send-order-email', {
-        body: { orderId, type: emailType }
-      });
-
-      if (emailError) {
-        console.error('Error sending email notification:', emailError);
-      }
-
-      toast({ title: "Order status updated and customer notified" });
-      loadOrders();
-    }
-  };
-
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-500";
-      case "processing":
-        return "bg-blue-500";
-      case "shipped":
-        return "bg-purple-500";
-      case "delivered":
-        return "bg-green-500";
-      case "cancelled":
-        return "bg-red-500";
-      default:
-        return "bg-gray-500";
-    }
+    const map: Record<string, string> = {
+      pending: "bg-yellow-500", processing: "bg-blue-500", shipped: "bg-purple-500",
+      delivered: "bg-green-500", cancelled: "bg-red-500",
+    };
+    return map[status] || "bg-gray-500";
   };
-
-  if (adminLoading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
-
-  if (!isAdmin) {
-    navigate("/");
-    return null;
-  }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navigation />
-      <main className="flex-1 py-16">
-        <div className="container px-4">
-          <h1 className="text-4xl font-bold mb-8">Manage Orders</h1>
+    <AdminLayout title="Orders" description={`${orders.length} total orders`}>
+      <div className="space-y-4">
+        {loading ? (
+          <div className="py-12 text-center text-muted-foreground">Loading orders...</div>
+        ) : (
+          <div className="rounded-lg border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Order</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="w-20"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No orders yet</TableCell></TableRow>
+                ) : orders.map((order) => (
+                  <TableRow key={order.id}>
+                    <TableCell className="font-medium">#{order.order_number}</TableCell>
+                    <TableCell>
+                      <div>
+                        <p className="text-sm font-medium">{order.user_name}</p>
+                        <p className="text-xs text-muted-foreground">{order.user_email}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-semibold">R{order.total_amount.toFixed(2)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {new Date(order.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="outline" onClick={() => { setSelectedOrder(order); setModalOpen(true); }}>
+                        Manage
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
 
-          {loading ? (
-            <p>Loading orders...</p>
-          ) : (
-            <div className="space-y-4">
-              {orders.map((order) => (
-                <Card key={order.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle>Order #{order.order_number}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {new Date(order.created_at).toLocaleDateString()} at{" "}
-                          {new Date(order.created_at).toLocaleTimeString()}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Customer: {order.user_name} ({order.user_email})
-                        </p>
-                      </div>
-                      <Badge className={getStatusColor(order.status)}>
-                        {order.status}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <p className="font-semibold mb-2">Shipping Address:</p>
-                        <p className="text-sm text-muted-foreground">{order.shipping_address}</p>
-                      </div>
-
-                      <div>
-                        <p className="font-semibold mb-2">Total Amount:</p>
-                        <p className="text-lg text-[hsl(var(--luxury-gold))]">
-                          R{order.total_amount.toFixed(2)}
-                        </p>
-                      </div>
-
-                      <div>
-                        <Button
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setModalOpen(true);
-                          }}
-                          className="w-full"
-                        >
-                          Manage Order
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
-      
       {selectedOrder && (
-        <OrderDetailsModal
-          order={selectedOrder}
-          open={modalOpen}
-          onOpenChange={setModalOpen}
-          onUpdate={loadOrders}
-        />
+        <OrderDetailsModal order={selectedOrder} open={modalOpen} onOpenChange={setModalOpen} onUpdate={loadOrders} />
       )}
-      
-      <Footer />
-    </div>
+    </AdminLayout>
   );
 };
 
