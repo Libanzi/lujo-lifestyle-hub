@@ -138,30 +138,10 @@ const AdminSettings = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
-  if (!isAdmin || !settings) {
-    return null;
-  }
+  if (!settings) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center gap-3">
-          <Settings className="h-8 w-8" />
-          <div>
-            <h1 className="text-4xl font-bold">Alert Settings</h1>
-            <p className="text-muted-foreground">Configure alert thresholds and notification channels</p>
-          </div>
-        </div>
-
+    <AdminLayout title="Alert Settings" description="Configure alert thresholds and notification channels">
         <div className="grid gap-6">
           {/* Threshold Settings */}
           <Card>
@@ -362,9 +342,7 @@ const AdminSettings = () => {
             </Button>
           </div>
         </div>
-      </main>
-      <Footer />
-    </div>
+    </AdminLayout>
   );
 };
 
