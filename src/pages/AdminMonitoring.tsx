@@ -206,7 +206,6 @@ export default function AdminMonitoring() {
     return matchesSearch && matchesStatus && matchesFunction;
   });
 
-  if (loading) {
   return (
     <AdminLayout title="Edge Function Monitoring" description="Real-time monitoring and logging of all edge function executions">
       <div className="space-y-8">
