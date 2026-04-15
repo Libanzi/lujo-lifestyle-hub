@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAdmin } from "@/hooks/useAdmin";
-import { useNavigate } from "react-router-dom";
 import { DollarSign, Package, ShoppingCart, TrendingUp, Users } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
@@ -20,8 +17,6 @@ interface AnalyticsData {
 }
 
 export default function Analytics() {
-  const { isAdmin, loading: adminLoading } = useAdmin();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsData>({
     totalRevenue: 0,
@@ -35,12 +30,8 @@ export default function Analytics() {
   });
 
   useEffect(() => {
-    if (!adminLoading && !isAdmin) {
-      navigate("/");
-    } else if (isAdmin) {
-      loadAnalytics();
-    }
-  }, [isAdmin, adminLoading, navigate]);
+    loadAnalytics();
+  }, []);
 
   const loadAnalytics = async () => {
     try {
@@ -146,28 +137,9 @@ export default function Analytics() {
     }
   };
 
-  if (adminLoading || loading) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navigation />
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">Loading analytics...</p>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navigation />
-      <main className="flex-1 py-12 px-4">
-        <div className="container">
-          <h1 className="text-4xl font-bold mb-8">Analytics Dashboard</h1>
+    <AdminLayout title="Analytics Dashboard" description="Sales reports and business insights">
+      <div className="space-y-8">
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -356,9 +328,7 @@ export default function Analytics() {
               </CardContent>
             </Card>
           )}
-        </div>
-      </main>
-      <Footer />
-    </div>
+      </div>
+    </AdminLayout>
   );
 }

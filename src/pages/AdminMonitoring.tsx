@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Navigation } from "@/components/Navigation";
-import { Footer } from "@/components/Footer";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -207,25 +206,9 @@ export default function AdminMonitoring() {
     return matchesSearch && matchesStatus && matchesFunction;
   });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading monitoring data...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navigation />
-      
-      <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Edge Function Monitoring</h1>
-          <p className="text-muted-foreground">
-            Real-time monitoring and logging of all edge function executions
-          </p>
-        </div>
+    <AdminLayout title="Edge Function Monitoring" description="Real-time monitoring and logging of all edge function executions">
+      <div className="space-y-8">
 
         {/* Metrics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
@@ -383,9 +366,7 @@ export default function AdminMonitoring() {
             </div>
           </CardContent>
         </Card>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </AdminLayout>
   );
 }
