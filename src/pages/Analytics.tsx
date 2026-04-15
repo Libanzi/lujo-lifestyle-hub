@@ -30,12 +30,8 @@ export default function Analytics() {
   });
 
   useEffect(() => {
-    if (!adminLoading && !isAdmin) {
-      navigate("/");
-    } else if (isAdmin) {
-      loadAnalytics();
-    }
-  }, [isAdmin, adminLoading, navigate]);
+    loadAnalytics();
+  }, []);
 
   const loadAnalytics = async () => {
     try {
