@@ -38,6 +38,8 @@ import Loyalty from "./pages/Loyalty";
 import Compare from "./pages/Compare";
 import AdminMonitoring from "./pages/AdminMonitoring";
 import AdminSettings from "./pages/AdminSettings";
+import AdminSuppliers from "./pages/AdminSuppliers";
+import AdminReturns from "./pages/AdminReturns";
 import WordPressPage from "./pages/WordPressPage";
 import WordPressProducts from "./pages/WordPressProducts";
 import WordPressAdmin from "./pages/WordPressAdmin";
@@ -85,6 +87,8 @@ const App = () => (
           <Route path="/admin/monitoring" element={<AdminMonitoring />} />
           <Route path="/admin/analytics" element={<Analytics />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
+          <Route path="/admin/suppliers" element={<AdminSuppliers />} />
+          <Route path="/admin/returns" element={<AdminReturns />} />
           <Route path="/loyalty" element={<Loyalty />} />
           <Route path="/compare" element={<Compare />} />
           <Route path="/wp/page/:slug" element={<WordPressPage />} />

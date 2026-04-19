@@ -1,7 +1,7 @@
-import { 
-  LayoutDashboard, Package, Layers, ShoppingBag, Percent, 
-  BarChart3, Activity, Settings, Globe, TrendingUp, LogOut, 
-  ChevronLeft, Store
+import {
+  LayoutDashboard, Package, Layers, ShoppingBag, Percent,
+  BarChart3, Activity, Settings, Globe, TrendingUp, LogOut,
+  ChevronLeft, Store, Truck, RotateCcw
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -25,6 +25,8 @@ const storeItems = [
   { title: "Products", url: "/admin/products", icon: Package },
   { title: "Categories", url: "/admin/categories", icon: Layers },
   { title: "Orders", url: "/admin/orders", icon: ShoppingBag },
+  { title: "Returns", url: "/admin/returns", icon: RotateCcw },
+  { title: "Suppliers", url: "/admin/suppliers", icon: Truck },
   { title: "Discounts", url: "/admin/discounts", icon: Percent },
 ];
 
