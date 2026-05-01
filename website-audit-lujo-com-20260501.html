@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Website Audit — lujo.com — 1 May 2026</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --pg-orange: #F0920C; --pg-black: #111111; --pg-dark: #1a1a1a;
+      --pg-card: #242424; --pg-text: #f5f5f5; --pg-muted: #888;
+      --green: #22c55e; --amber: #f59e0b; --red: #ef4444; --blue: #3b82f6;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--pg-black); color:var(--pg-text); font-family:'Segoe UI',system-ui,sans-serif; }
+    .header { background:var(--pg-dark); border-bottom:3px solid var(--pg-orange); padding:24px 32px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+    .header-left h1 { font-size:1.4rem; font-weight:800; }
+    .header-left h1 span { color:var(--pg-orange); }
+    .header-left .meta { font-size:0.78rem; color:var(--pg-muted); margin-top:4px; }
+    .site-type-badge { display:inline-block; margin-top:8px; background:rgba(240,146,12,0.12); border:1px solid var(--pg-orange); color:var(--pg-orange); font-size:0.73rem; font-weight:700; padding:4px 12px; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px; }
+    .score-block { text-align:center; }
+    .score-badge { background:var(--pg-orange); color:var(--pg-black); font-size:2.2rem; font-weight:900; padding:14px 28px; border-radius:10px; line-height:1; }
+    .score-status { font-size:0.73rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-top:6px; }
+    .summary { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; padding:20px 32px; background:var(--pg-dark); border-bottom:1px solid #2a2a2a; }
+    .summary-card { background:var(--pg-card); border-radius:10px; padding:16px; border-left:4px solid var(--pg-orange); }
+    .summary-card .num { font-size:1.9rem; font-weight:800; color:var(--pg-orange); }
+    .summary-card .label { font-size:0.78rem; color:var(--pg-muted); margin-top:4px; }
+    .layer-scores { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:20px 32px 0; }
+    .layer-card { background:var(--pg-card); border-radius:10px; padding:16px 20px; }
+    .layer-card .layer-label { font-size:0.82rem; font-weight:600; color:var(--pg-muted); text-transform:uppercase; letter-spacing:0.3px; }
+    .layer-card .layer-row { display:flex; justify-content:space-between; align-items:baseline; }
+    .layer-card .layer-score { font-size:1.5rem; font-weight:800; }
+    .progress-bar { background:#2a2a2a; border-radius:4px; height:6px; margin-top:8px; }
+    .progress-fill { height:6px; border-radius:4px; }
+    .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; padding:20px 32px; }
+    .chart-card { background:var(--pg-card); border-radius:12px; padding:22px; }
+    .chart-card.full-width { grid-column:1/-1; }
+    .chart-card h3 { font-size:0.8rem; font-weight:700; color:var(--pg-orange); margin-bottom:14px; text-transform:uppercase; letter-spacing:0.8px; }
+    .chart-wrapper { position:relative; height:270px; }
+    .chart-wrapper.tall { height:340px; }
+    .gap-section { padding:0 32px 32px; }
+    .gap-section h2 { font-size:1rem; font-weight:800; color:var(--pg-orange); margin-bottom:14px; text-transform:uppercase; }
+    .gap-table { width:100%; border-collapse:collapse; font-size:0.84rem; }
+    .gap-table th { background:var(--pg-dark); padding:11px 14px; text-align:left; font-size:0.73rem; color:var(--pg-muted); text-transform:uppercase; letter-spacing:0.5px; border-bottom:2px solid #333; }
+    .gap-table td { padding:11px 14px; border-bottom:1px solid #2a2a2a; }
+    .gap-table tr:hover { background:rgba(240,146,12,0.04); }
+    .badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.7rem; font-weight:800; }
+    .badge.critical { background:#ef444415; color:#ef4444; border:1px solid #ef4444; }
+    .badge.high { background:#f59e0b15; color:#f59e0b; border:1px solid #f59e0b; }
+    .badge.medium { background:#3b82f615; color:#3b82f6; border:1px solid #3b82f6; }
+    .badge.low { background:#6b728015; color:#9ca3af; border:1px solid #6b7280; }
+    .footer { text-align:center; padding:22px; color:var(--pg-muted); font-size:0.78rem; border-top:1px solid #2a2a2a; }
+    .footer a { color:var(--pg-orange); text-decoration:none; font-weight:600; }
+    @media(max-width:768px){.summary,.layer-scores,.charts-grid{grid-template-columns:1fr}.chart-card.full-width{grid-column:1}.header,.charts-grid,.gap-section,.summary,.layer-scores{padding-left:16px;padding-right:16px}}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Website Audit — <span>lujo.com</span></h1>
+    <div class="meta">Audited 1 May 2026 · 12 key pages reviewed (source-code audit)</div>
+    <div class="site-type-badge">🏷 E-Commerce / Online Shop</div>
+  </div>
+  <div class="score-block">
+    <div class="score-badge">82%</div>
+    <div class="score-status" style="color:#22c55e">GOOD</div>
+  </div>
+</div>
+
+<div class="summary">
+  <div class="summary-card"><div class="num">82%</div><div class="label">Overall Completion Score</div></div>
+  <div class="summary-card"><div class="num" style="color:var(--red)">0</div><div class="label">Critical Issues</div></div>
+  <div class="summary-card"><div class="num" style="color:var(--amber)">4</div><div class="label">High Priority Gaps</div></div>
+  <div class="summary-card"><div class="num" style="color:var(--green)">4/7</div><div class="label">Dimensions ≥75%</div></div>
+</div>
+
+<div class="layer-scores">
+  <div class="layer-card">
+    <div class="layer-label">Universal Layer (SEO · UX · Mobile · Trust · Performance · Legal)</div>
+    <div class="layer-row"><span></span><span class="layer-score" style="color:#f59e0b">76%</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:76%;background:#f59e0b"></div></div>
+  </div>
+  <div class="layer-card">
+    <div class="layer-label">Type-Specific Layer — E-Commerce Features</div>
+    <div class="layer-row"><span></span><span class="layer-score" style="color:#22c55e">88%</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:88%;background:#22c55e"></div></div>
+  </div>
+</div>
+
+<div class="charts-grid">
+  <div class="chart-card"><h3>Overall Completion</h3><div class="chart-wrapper"><canvas id="donutChart"></canvas></div></div>
+  <div class="chart-card"><h3>Universal vs Type-Specific Layer</h3><div class="chart-wrapper"><canvas id="layerPieChart"></canvas></div></div>
+  <div class="chart-card full-width"><h3>All Dimension Scores</h3><div class="chart-wrapper tall"><canvas id="barChart"></canvas></div></div>
+  <div class="chart-card"><h3>Coverage Radar</h3><div class="chart-wrapper"><canvas id="radarChart"></canvas></div></div>
+  <div class="chart-card"><h3>Score Trajectory If Fixes Applied</h3><div class="chart-wrapper"><canvas id="lineChart"></canvas></div></div>
+  <div class="chart-card full-width"><h3>Weighted Impact vs Current Score — Where To Focus</h3><div class="chart-wrapper"><canvas id="impactChart"></canvas></div></div>
+</div>
+
+<div class="gap-section">
+  <h2>Gap & Priority Fix Matrix</h2>
+  <table class="gap-table">
+    <thead><tr><th>Status</th><th>Issue / Missing Feature</th><th>Dimension</th><th>Priority</th><th>Score Impact</th><th>Fix Complexity</th><th>Expected Outcome</th></tr></thead>
+    <tbody id="gapTableBody"></tbody>
+  </table>
+</div>
+
+<div class="footer">Website Audit Report · 1 May 2026 · LUJO Lifestyle Hub · Generated via Website-Audit-Dashboard skill</div>
+
+<script>
+const d = {
+  overallScore: 82,
+  universalScore: 76,
+  typeScore: 88,
+  dimensions: {
+    labels: ["A1 SEO Fundamentals","A2 Navigation & UX","A3 Mobile Readiness","A4 Trust & Credibility","A5 Performance","A6 Legal & Compliance","B E-Commerce Features"],
+    scores: [65, 85, 92, 70, 80, 65, 88],
+    weights: [10, 10, 10, 10, 5, 5, 50]
+  },
+  trajectory: {
+    labels: ["Now","Week 1","Week 2","Week 4","Month 2"],
+    scores: [82, 82, 91, 96, 98]
+  },
+  gaps: [
+    { status:"missing", issue:"No WhatsApp click-to-chat button (essential for SA e-commerce)", dimension:"Trust / Conversion", priority:"high", impact:3, complexity:"1–2 hours", outcome:"Recover ~15% of mobile abandoners; align with SA buyer expectations" },
+    { status:"partial", issue:"Single product image — no multi-angle gallery or zoom", dimension:"E-Commerce Features", priority:"high", impact:2, complexity:"1–2 days", outcome:"Higher add-to-cart rate; reduce returns from mismatched expectations" },
+    { status:"partial", issue:"Guest checkout not clearly offered — auth required for cart", dimension:"E-Commerce Features", priority:"high", impact:2, complexity:"2–3 days", outcome:"Cut checkout drop-off (typical 30%+ uplift on guest enabled)" },
+    { status:"missing", issue:"No related products / upsell on product detail page", dimension:"E-Commerce Features", priority:"high", impact:2, complexity:"1–2 days", outcome:"Lift average order value 8–15%" },
+    { status:"missing", issue:"No cookie consent banner (POPIA/GDPR risk)", dimension:"Legal & Compliance", priority:"medium", impact:1, complexity:"2–4 hours", outcome:"POPIA compliance + reduced legal exposure" },
+    { status:"missing", issue:"No sitemap.xml exposed", dimension:"SEO Fundamentals", priority:"medium", impact:1, complexity:"1 hour", outcome:"Faster Google indexing of new products" },
+    { status:"missing", issue:"No canonical tags on product/category pages", dimension:"SEO Fundamentals", priority:"medium", impact:1, complexity:"4 hours", outcome:"Avoid duplicate-content penalties from filtered URLs" },
+    { status:"missing", issue:"No physical address / company registration in footer", dimension:"Trust & Credibility", priority:"medium", impact:1, complexity:"30 min", outcome:"Trust signal for first-time buyers; CIPC compliance" },
+    { status:"partial", issue:"Multiple payment methods not visible at checkout (PayFast only)", dimension:"E-Commerce Features", priority:"medium", impact:1, complexity:"3–5 days", outcome:"Capture EFT-only and Mobicred buyers" },
+    { status:"missing", issue:"No accessibility statement / WCAG audit", dimension:"Legal & Compliance", priority:"low", impact:1, complexity:"1 day", outcome:"Inclusivity + risk reduction" },
+    { status:"missing", issue:"No back-to-top button on long product/category pages", dimension:"Navigation & UX", priority:"low", impact:1, complexity:"30 min", outcome:"Improved long-page UX, especially mobile" },
+    { status:"partial", issue:"Alt text inconsistent on product and hero images", dimension:"SEO Fundamentals", priority:"medium", impact:1, complexity:"2–4 hours", outcome:"Image-search traffic + screen-reader access" },
+    { status:"verified", issue:"Full e-commerce flow present: cart, wishlist, checkout, orders, tracking", dimension:"E-Commerce Features", priority:"low", impact:0, complexity:"—", outcome:"Strong baseline" },
+    { status:"verified", issue:"PayFast payment gateway integrated", dimension:"E-Commerce Features", priority:"low", impact:0, complexity:"—", outcome:"South African market fit" },
+    { status:"verified", issue:"Loyalty programme + product reviews + chat widget present", dimension:"Engagement", priority:"low", impact:0, complexity:"—", outcome:"Above-average retention stack" }
+  ]
+};
+
+function sc(s){ return s>=75?'#22c55e':s>=60?'#f59e0b':'#ef4444'; }
+
+new Chart(document.getElementById('donutChart'),{type:'doughnut',data:{labels:['Complete','Incomplete'],datasets:[{data:[d.overallScore,100-d.overallScore],backgroundColor:['#22c55e','#ef444430'],borderColor:['#22c55e','#ef4444'],borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'74%',plugins:{legend:{labels:{color:'#f5f5f5'}},tooltip:{callbacks:{label:c=>` ${c.parsed}%`}}}}});
+
+new Chart(document.getElementById('layerPieChart'),{type:'pie',data:{labels:['Universal Layer','Type-Specific Layer'],datasets:[{data:[d.universalScore,d.typeScore],backgroundColor:['#F0920C','#3b82f6'],borderColor:'#111',borderWidth:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#f5f5f5'}},tooltip:{callbacks:{label:c=>` ${c.parsed}%`}}}}});
+
+new Chart(document.getElementById('barChart'),{type:'bar',data:{labels:d.dimensions.labels,datasets:[{label:'Score (%)',data:d.dimensions.scores,backgroundColor:d.dimensions.scores.map(sc),borderRadius:6,borderSkipped:false}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{min:0,max:100,ticks:{color:'#888',callback:v=>v+'%'},grid:{color:'#2a2a2a'}},y:{ticks:{color:'#f5f5f5',font:{size:11}},grid:{display:false}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed.x}%`}}}}});
+
+new Chart(document.getElementById('radarChart'),{type:'radar',data:{labels:d.dimensions.labels,datasets:[{label:'Current',data:d.dimensions.scores,backgroundColor:'rgba(240,146,12,0.15)',borderColor:'#F0920C',pointBackgroundColor:'#F0920C',pointRadius:4,borderWidth:2},{label:'Target',data:new Array(d.dimensions.labels.length).fill(100),backgroundColor:'rgba(34,197,94,0.04)',borderColor:'rgba(34,197,94,0.25)',pointRadius:0,borderWidth:1,borderDash:[5,5]}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{color:'#888',backdropColor:'transparent',stepSize:25},grid:{color:'#2a2a2a'},pointLabels:{color:'#f5f5f5',font:{size:9}},angleLines:{color:'#2a2a2a'}}},plugins:{legend:{labels:{color:'#f5f5f5',font:{size:11}}}}}});
+
+new Chart(document.getElementById('lineChart'),{type:'line',data:{labels:d.trajectory.labels,datasets:[{label:'Projected Score',data:d.trajectory.scores,borderColor:'#F0920C',backgroundColor:'rgba(240,146,12,0.1)',pointBackgroundColor:'#F0920C',pointRadius:6,fill:true,tension:0.35,borderWidth:3}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:100,ticks:{color:'#888',callback:v=>v+'%'},grid:{color:'#2a2a2a'}},x:{ticks:{color:'#888'},grid:{color:'#2a2a2a'}}},plugins:{legend:{labels:{color:'#f5f5f5'}},tooltip:{callbacks:{label:c=>` ${c.parsed.y}%`}}}}});
+
+new Chart(document.getElementById('impactChart'),{type:'bar',data:{labels:d.dimensions.labels,datasets:[{label:'Current Score (%)',data:d.dimensions.scores,backgroundColor:'rgba(240,146,12,0.8)',borderRadius:4},{label:'Weight / Priority (%)',data:d.dimensions.weights,backgroundColor:'rgba(59,130,246,0.55)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{color:'#888',callback:v=>v+'%'},grid:{color:'#2a2a2a'}},x:{ticks:{color:'#888',font:{size:10}},grid:{display:false}}},plugins:{legend:{labels:{color:'#f5f5f5'}}}}});
+
+const tbody=document.getElementById('gapTableBody');
+d.gaps.forEach(g=>{
+  const icon=g.status==='missing'?'❌':g.status==='partial'?'⚠️':'✅';
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td style="font-size:1rem">${icon}</td><td style="font-weight:500">${g.issue}</td><td style="color:#F0920C;font-size:0.82rem">${g.dimension}</td><td><span class="badge ${g.priority}">${g.priority.toUpperCase()}</span></td><td style="color:#22c55e;font-weight:600">+${g.impact}%</td><td style="color:#888;font-size:0.82rem">${g.complexity}</td><td style="color:#888;font-size:0.82rem">${g.outcome}</td>`;
+  tbody.appendChild(tr);
+});
+</script>
+</body>
+</html>
